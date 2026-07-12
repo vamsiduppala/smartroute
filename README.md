@@ -32,7 +32,20 @@ SmartRoute is growing into an **AI Gateway** — a Spring Boot control plane in 
 | **observability** | `GET /observability/metrics` | AI SDK 7 telemetry redesign (2026-07-09) | ✅ tested |
 | rag / memory / longcontext | — | Anthropic web-search / agent-memory / Sonnet 5 1M | ⏳ designed (needs Anthropic key) |
 
-20 unit tests across the modules, all green. See `docs/*-NOTES.md` and `architecture` for design.
+```mermaid
+flowchart LR
+    C[Client] --> G["POST /gateway/route"]
+    G --> GR[Guardrails: injection scan]
+    GR -->|flagged| X[Reject]
+    GR -->|clean| BG[Governance: budget check]
+    BG -->|over cap| X
+    BG -->|ok / downgrade| R[SmartRouteService]
+    R --> Tiers["GPT-5.6: Luna / Terra / Sol"]
+    R --> OB[Observability: cost + latency]
+    R --> LG[SpendLedger: book spend]
+```
+
+24 unit tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
 
 ## Run it
 Prerequisites: **Java 21** and **Maven 3.9+**.

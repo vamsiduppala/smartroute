@@ -1,5 +1,7 @@
 package com.vamsi.smartroute.guardrails;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -11,20 +13,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Java port of the AI SDK 7 tool-drift defense (fingerprintTools / detectToolDrift, 2026-07-09).
- * You fingerprint an MCP tool's schema when you first trust it; if the schema silently mutates on a
+ * Fingerprint an MCP tool's schema when you first trust it; if the schema silently mutates on a
  * later turn ("rug pull"), the fingerprint no longer matches and the call can be refused.
  *
- * This is a Spring/Java implementation of that same idea — not the AI SDK itself.
+ * Schemas are CANONICALIZED (JSON object keys sorted) before hashing, so a server that merely
+ * reorders keys between calls does not trigger a false drift alarm.
  */
 @Component
 public class ToolDriftDetector {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final Map<String, String> trusted = new ConcurrentHashMap<>();
+
+    /** Sort JSON object keys recursively so semantically-identical schemas hash the same. Non-JSON hashes raw. */
+    static String canonicalize(String json) {
+        if (json == null) return "";
+        try {
+            Object parsed = MAPPER.readValue(json, Object.class);
+            return MAPPER.writer().with(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writeValueAsString(parsed);
+        } catch (Exception notJson) {
+            return json.trim();
+        }
+    }
 
     public static String fingerprint(String schemaJson) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(schemaJson.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = md.digest(canonicalize(schemaJson).getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 unavailable", e);
