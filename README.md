@@ -21,6 +21,19 @@ var options = OpenAiChatOptions.builder().model(tier.modelId).build(); // gpt-5.
 chatModel.call(new Prompt(prompt, options));
 ```
 
+## Enterprise modules (AI Gateway)
+SmartRoute is growing into an **AI Gateway** — a Spring Boot control plane in front of every LLM call. Each module rides a specific dated launch:
+
+| Module | Endpoint | Rides | Status |
+|--------|----------|-------|--------|
+| **routing** (core) | `POST /route` | GPT-5.6 tiers (2026-07-09) | ✅ tested |
+| **governance** | `GET/PUT /governance/*` | GPT-5.6 tier pricing | ✅ tested |
+| **guardrails** | `POST /guardrails/*` | AI SDK 7 tool-drift defense (2026-07-09), Java port | ✅ tested |
+| **observability** | `GET /observability/metrics` | AI SDK 7 telemetry redesign (2026-07-09) | ✅ tested |
+| rag / memory / longcontext | — | Anthropic web-search / agent-memory / Sonnet 5 1M | ⏳ designed (needs Anthropic key) |
+
+20 unit tests across the modules, all green. See `docs/*-NOTES.md` and `architecture` for design.
+
 ## Run it
 Prerequisites: **Java 21** and **Maven 3.9+**.
 ```bash
@@ -29,8 +42,9 @@ mvn spring-boot:run                                      # serves POST /route
 curl -s localhost:8080/route -H 'content-type: application/json' \
      -d '{"prompt":"What is the capital of France?"}'    # → answered by Luna, fractions of a cent
 
-mvn spring-boot:run -Dspring-boot.run.arguments=--eval   # runs the benchmark → eval/results.md
+mvn spring-boot:run "-Dspring-boot.run.arguments=--eval --spring.main.web-application-type=none"  # benchmark → eval/results.md
 ```
+(The benchmark needs an OpenAI key **with billing enabled** — a key without quota returns HTTP 429 `insufficient_quota`.)
 
 ## Benchmark
 `eval/tasks.jsonl` holds a fixed task set spanning trivial → hard. The runner answers each **twice** — always-Sol baseline vs. routed — and writes `eval/results.md`.

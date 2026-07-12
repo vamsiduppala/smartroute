@@ -92,6 +92,7 @@ public class EvalRunner implements ApplicationRunner {
 
         Files.writeString(Path.of("eval/results.md"), out);
         System.out.println(out);
+        System.exit(0); // one-shot benchmark: terminate the app instead of leaving the web server up
     }
 
     private static long num(Object o) { return o == null ? 0L : ((Number) o).longValue(); }
