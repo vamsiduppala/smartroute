@@ -1,0 +1,8 @@
+{"id":"t1","prompt":"What is the capital of France?","expect":"Paris"}
+{"id":"t2","prompt":"Return only the value of 2+2.","expect":"4"}
+{"id":"t3","prompt":"In one word, what color is a clear daytime sky?","expect":"blue"}
+{"id":"t4","prompt":"Write a Java method signature (no body) named isPrime that takes an int and returns boolean. Include the word boolean.","expect":"boolean"}
+{"id":"t5","prompt":"Derive the time complexity of binary search on a sorted array of n elements. State it in Big-O.","expect":"log"}
+{"id":"t6","prompt":"Refactor this to remove the race condition and explain why: two threads increment a shared int counter without synchronization. Mention 'AtomicInteger' or 'synchronized'.","expect":"atomic"}
+{"id":"t7","prompt":"Give the regex for a US ZIP+4 code. Include a digit quantifier like {4} or {5}.","expect":"{4}"}
+{"id":"t8","prompt":"What does HTTP status 404 mean? One sentence.","expect":"not found"}
