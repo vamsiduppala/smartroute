@@ -33,14 +33,17 @@
 - **k8s manifest schema/dry-run validation** — `kubectl` is installed (no cluster context configured) but the local sandbox has no reachable cluster to validate against, client or server side. What *was* verified: all 4 YAML files (`k8s/*.yaml`, `.github/workflows/ci.yml`) parse as valid YAML (via PyYAML). The Deployment/Service/Secret shapes were only checked by eye against the known Kubernetes API, not by `kubectl apply --dry-run`. Revisit with a real cluster (`kind`/`minikube`/actual context) available.
 
 ## Known limitations (found via independent review, 2026-07-13 — real, verified, deliberately not "fixed" yet)
-An independent second-pass review of the whole codebase found several issues beyond the four
-bugs already fixed this session (DOWNGRADE never enforced; telemetry pointcut missing
-`routeFrom`; `GlobalExceptionHandler` shadowing 400 then 405/415; `ToolDriftDetector` ignoring
-trailing JSON). These four are real too, but each needs an actual design decision or a
-larger-blast-radius refactor rather than a safe mechanical fix, so they're documented instead
-of rushed — consistent with "do NOT invent these" below: an honest known-limitation beats a
-hasty fix that might be subtly wrong.
+Two rounds of independent review this session found a lot: 6 real bugs, all fixed (DOWNGRADE
+never enforced; telemetry pointcut missing `routeFrom`; `GlobalExceptionHandler` shadowing 400,
+then separately 405/415; `ToolDriftDetector` ignoring trailing JSON, then a second fix for that
+FIRST fix breaking its own key-reordering guarantee; a missing `Allow` header on 405s) plus one
+claimed bug (bad `Accept` header -> 500) that a test proved doesn't actually reproduce in this
+app's configuration -- not fixed, because there was nothing to fix. The 5 items below are real
+too, but each needs an actual design decision or a larger-blast-radius refactor rather than a
+safe mechanical fix, so they're documented instead of rushed — consistent with "do NOT invent
+these" below: an honest known-limitation beats a hasty fix that might be subtly wrong.
 
+- **No authentication or authorization anywhere in the app.** Not specific to any one endpoint — flagged because a second review pass singled out the new `GET /governance/spend` (admin-style cross-tenant dump) as a meaningful *increase* in exposure vs. the existing per-tenant `GET /governance/spend/{tenant}` (which at least requires already knowing a tenant name). True, and worth a second look before anything here is internet-facing, but it's a whole-app scope decision (add Spring Security, API keys, something) — not a targeted fix, and this is a demo/portfolio gateway, not a production one. Noting it plainly rather than bolting on partial auth for one endpoint.
 - **DOWNGRADE lowers the floor, not a hard ceiling.** `GatewayService` forces `routeFrom(..., Tier.LUNA)` on a DOWNGRADE decision, but `SmartRouteService`'s escalation loop still climbs Luna→Terra→Sol if Luna's answer fails validation — a downgraded tenant under budget pressure can still end up billed at Sol rates. This is deliberate, not an oversight: hard-capping at Luna regardless of answer quality would violate this project's own quality-parity principle (see the eval gotchas above) by silently accepting bad answers to save money. Documented, not changed.
 - **Budget check uses a single-attempt estimate; actual spend can be ~3x higher.** `GatewayService.handle()` checks `BudgetGuard` against `classification.startTier().costUsd(...)` for ONE attempt, but real spend (`result.costUsd()`) sums cost across every escalation attempt (the same per-attempt-cost gotcha above). A request that estimates as comfortably ALLOW can, after escalating through all three tiers, book meaningfully more than what was checked against the cap. Pre-computing a worst-case estimate would require walking the full escalation chain before spending anything, which isn't possible (you don't know if Luna will pass until you call it).
 - **Budget check and spend booking aren't atomic (TOCTOU race).** `budgetGuard.evaluate()` (read) and `ledger.add()` (write, after the model call) are separate steps with no lock spanning them. Two concurrent requests for the same tenant near their cap can both read the same pre-spend total, both get ALLOW, and both book spend afterward — cumulative spend can exceed the cap under concurrent load. `SpendLedger`/`BudgetGuard` are internally thread-safe (`ConcurrentHashMap`/atomics) but that doesn't make the check-then-act sequence atomic. A real fix needs a per-tenant lock or a reserve-then-commit pattern, not just swapping data structures.
