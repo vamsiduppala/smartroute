@@ -111,7 +111,7 @@ class EvalRunnerTest {
 
         // Baseline (Sol) answers "Paris" with a small token usage for every call. Build the real
         // response object (final accessors can't be stubbed without the inline mock-maker, which
-        // BUILD_NOTES flags as deprecated on future JDKs) — same pattern as SmartRouteServiceTest.
+        // docs/ENGINEERING.md flags as deprecated on future JDKs) — same pattern as SmartRouteServiceTest.
         when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("Paris", 100, 50));
 
         // Routing succeeds for the good task and throws for the bad one.

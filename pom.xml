@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
-        <!-- Pinned to the 1.0.x line deliberately (see BUILD_NOTES.md gotchas re: the 1.0.0 GA
+        <!-- Pinned to the 1.0.x line deliberately (see docs/ENGINEERING.md re: the 1.0.0 GA
              starter rename), bumped to the latest 1.0.x patch, not the 2.0.0 major, which is
              a real migration, not a patch update. Same reasoning for spring-boot-starter-parent
              above (3.4.1 to latest 3.4.x, not 4.x) and springdoc below (2.8.3 to latest 2.8.x,

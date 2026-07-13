@@ -102,7 +102,7 @@ public class SmartRouteService {
 
     private static long asLong(Object tokenCount) {
         // Spring AI's Usage token getters have shifted between Integer/Long across versions —
-        // normalize defensively. See BUILD_NOTES.md ("gotchas").
+        // normalize defensively. See docs/ENGINEERING.md ("Gotchas the docs don't tell you").
         if (tokenCount == null) return 0L;
         return ((Number) tokenCount).longValue();
     }

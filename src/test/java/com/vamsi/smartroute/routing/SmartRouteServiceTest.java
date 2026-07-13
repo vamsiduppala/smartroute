@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Direct coverage of the escalation algorithm -- this is the whole thesis of the project
- * (BUILD_NOTES.md), but until now it was only exercised indirectly through a mocked router
+ * (see docs/ENGINEERING.md), but until now it was only exercised indirectly through a mocked router
  * in GatewayServiceTest. Everything here is offline: OpenAiChatModel is mocked, no live call.
  */
 class SmartRouteServiceTest {
@@ -70,7 +70,7 @@ class SmartRouteServiceTest {
         assertEquals(2, r.attempts());
         assertTrue(r.passed());
         assertEquals("42", r.answer());
-        // Per-attempt-cost gotcha (BUILD_NOTES.md): a failed Luna attempt is still billed at
+        // Per-attempt-cost gotcha (see docs/ENGINEERING.md): a failed Luna attempt is still billed at
         // Luna's rate, ON TOP OF the Terra attempt that succeeds -- not just the final tier's rate.
         double expected = Tier.LUNA.costUsd(10, 5) + Tier.TERRA.costUsd(10, 8);
         assertEquals(expected, r.costUsd(), 1e-12);

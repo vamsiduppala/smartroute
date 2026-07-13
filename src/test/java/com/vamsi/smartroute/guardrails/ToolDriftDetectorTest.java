@@ -34,7 +34,7 @@ class ToolDriftDetectorTest {
 
     @Test
     void keyReorderingIsStillNotDriftEvenWithTrailingContent() {
-        // Regression coverage for a bug this session's own fix introduced: an earlier version
+        // Regression coverage for a bug an earlier fix in this detector introduced: a prior version
         // used DeserializationFeature.FAIL_ON_TRAILING_TOKENS, which made canonicalize() throw
         // on trailing content -- falling into the SAME catch block used for non-JSON input
         // (raw trimmed-string comparison, which IS key-order sensitive). That broke
