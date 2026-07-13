@@ -29,4 +29,22 @@ class ComplexityClassifierTest {
         assertTrue(c.score() >= 4, "expected high-complexity score, got " + c.score());
         assertEquals(Tier.SOL, c.startTier());
     }
+
+    @Test
+    void moderateLengthAloneIsNotEnoughToLeaveLuna() {
+        // length > 400 but <= 1200 -> +1 only, no hard signals/code -> score 1, still LUNA
+        String prompt = "word ".repeat(90);   // ~450 chars, no keywords, no code
+        var c = classifier.classify(prompt);
+        assertEquals(1, c.score());
+        assertEquals(Tier.LUNA, c.startTier());
+    }
+
+    @Test
+    void greatLengthAloneIsEnoughToReachTerra() {
+        // length > 1200 -> +2 on its own, no hard signals/code needed -> score 2 -> Terra
+        String prompt = "word ".repeat(300);   // ~1500 chars, no keywords, no code
+        var c = classifier.classify(prompt);
+        assertEquals(2, c.score());
+        assertEquals(Tier.TERRA, c.startTier());
+    }
 }
