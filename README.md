@@ -125,6 +125,23 @@ Swagger UI at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is ru
 
 `Dockerfile` builds a multi-stage JRE image; `k8s/` has a Deployment (readiness/liveness on Actuator health groups) + Service + a `secret.example.yaml` template for `OPENAI_API_KEY`. Manifests are schema-validated against Kubernetes 1.31; they're here for review, not a running cluster.
 
+## Repository layout
+
+```
+src/main/java/com/vamsi/smartroute/
+├── model/          # Tier — model ids, per-Mtok pricing, escalate()
+├── routing/        # ComplexityClassifier, SmartRouteService (classify → call → escalate)
+├── gateway/        # GatewayService — composes guardrails + governance + routing in one pass
+├── governance/     # BudgetGuard, SpendLedger — per-tenant caps, atomic check-and-reserve
+├── guardrails/     # prompt-injection scan + tool-drift detection
+├── observability/  # TelemetryService, RouterTelemetryAspect — per-call Micrometer telemetry
+├── web/            # controllers + GlobalExceptionHandler (clean 4xx mapping)
+├── demo/           # DemoChatModel — keyless `demo` profile
+└── eval/           # EvalRunner — routed vs. always-Sol benchmark
+docs/               # ENGINEERING.md, per-module design notes, simulation results, blog draft
+k8s/                # Deployment + Service + Secret template (schema-validated)
+```
+
 ## Project notes
 
 - **Pricing & model ids** reflect the GPT-5.6 launch on 2026-07-09 — verify against [OpenAI's release notes](https://openai.com/products/release-notes/) before relying on them.
