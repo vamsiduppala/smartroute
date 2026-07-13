@@ -1,11 +1,17 @@
 # BUILD_NOTES — SmartRoute (raw material for the post)
 
-## HANDOFF — pick up here (written 2026-07-13T07:25:48Z, end of a Sonnet 5 hardening session)
-Next session runs on Opus 4.8, cold start. Repo is fully committed and pushed (`origin/main` ==
-local HEAD), 76 tests green, CI green. Cadence rule in effect: 1 hour of active-work-only,
-back-to-back chunks, no questions, deferred list for blockers, pushing pre-authorized — then a
-genuine 5-hour break before the next hour block. This session's hour ended at 2026-07-13T07:25:48Z;
-next block should start ~2026-07-13T12:25:48Z.
+## HANDOFF — pick up here (updated 2026-07-13T12:44:09Z)
+Cadence rule in effect: 1 hour of active-work-only, back-to-back chunks, no questions, deferred
+list for blockers, pushing pre-authorized — then a genuine 5-hour break before the next hour
+block.
+
+**Deferred for the user: the planned model handoff didn't happen.** Hour two (Sonnet 5) ended
+2026-07-13T07:25:48Z with next-block start planned for ~12:25:48Z on a fresh Opus 4.8 session.
+That Opus session failed to spawn (4 timeouts, likely a pending approval with the user away).
+Per the standing "never sit blocked" rule, hour three is running on Sonnet 5 instead, as a
+fallback, starting 2026-07-13T12:44:09Z. The model-switch plan itself is what's deferred here —
+not a code/repo issue, just flagging that the Opus handoff needs the user's attention whenever
+they're back, not that anything is broken.
 
 **State:** all 3 previously-deferred "known limitations" from earlier today are now fixed
 (mid-escalation cost loss, TOCTOU budget race, telemetry granularity — see "Known limitations"
