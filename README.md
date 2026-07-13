@@ -66,7 +66,7 @@ flowchart LR
     R --> LG[SpendLedger: reconcile actual spend]
 ```
 
-Per-module design write-ups (and the non-obvious gotchas each one solves) live in [`docs/`](docs/) — start with [`docs/ENGINEERING.md`](docs/ENGINEERING.md).
+**New here?** [`docs/CODE_WALKTHROUGH.md`](docs/CODE_WALKTHROUGH.md) traces a single request through every layer above, in execution order, with links to the exact code — the fastest way to see how it fits together. Per-module design write-ups (and the non-obvious gotchas each one solves) live in [`docs/`](docs/), starting with [`docs/ENGINEERING.md`](docs/ENGINEERING.md).
 
 ## Quickstart
 

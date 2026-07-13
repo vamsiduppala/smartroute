@@ -3,6 +3,11 @@
 Start with the [main README](../README.md) for the what and why. This folder holds the deeper
 engineering material.
 
+## Start here
+- **[CODE_WALKTHROUGH.md](CODE_WALKTHROUGH.md)** — one request traced end to end through every
+  layer, in execution order, with links to the exact code. The fastest way to understand how the
+  pieces fit and why each exists.
+
 ## Design & rationale
 - **[ENGINEERING.md](ENGINEERING.md)** — design rationale, the Spring AI gotchas the docs don't
   mention, the honest per-attempt cost model, design decisions & known limitations, and how
