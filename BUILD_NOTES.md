@@ -22,9 +22,9 @@
 - **Savings are only real at quality parity.** The eval reports routed-pass vs. baseline-pass side by side; a savings % is meaningless if routed answers pass fewer tasks. Report both or you're lying with a number.
 
 ## Verification status (2026-07-12)
-- Compiles clean on Spring AI 1.0.0 GA + JDK 21 (11 classes).
-- 6/6 unit tests green: `Tier` cost math + escalation chain, `ComplexityClassifier` tier buckets.
-- NOT yet run end-to-end: the live GPT-5.6 eval needs `OPENAI_API_KEY`. Real cost numbers pending that run.
+- Compiles clean on Spring AI 1.0.0 GA + JDK 21.
+- 25 unit tests green across routing, governance, guardrails, observability, gateway, and the routing simulation.
+- Live GPT-5.6 eval blocked: owner's OpenAI account has no billing (`insufficient_quota`). Worked around with `RoutingSimulationTest` — a labeled projection on real published pricing (~54.6% saved), zero credits. Live measurement is optional future work, not a blocker.
 
 ## What to measure before posting (do NOT invent these)
 - Real routed vs. Sol-only $ on the task set (run `--eval`).

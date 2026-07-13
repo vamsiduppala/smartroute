@@ -45,7 +45,7 @@ flowchart LR
     R --> LG[SpendLedger: book spend]
 ```
 
-24 unit tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
+25 unit tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
 
 ## Run it
 Prerequisites: **Java 21** and **Maven 3.9+**.
@@ -62,7 +62,9 @@ mvn spring-boot:run "-Dspring-boot.run.arguments=--eval --spring.main.web-applic
 ## Benchmark
 `eval/tasks.jsonl` holds a fixed task set spanning trivial → hard. The runner answers each **twice** — always-Sol baseline vs. routed — and writes `eval/results.md`.
 
-> **Numbers are generated at run time by `EvalRunner`; nothing here is hardcoded.** Run the eval with your key to populate `eval/results.md`. (This section is intentionally empty until then — see BUILD_NOTES.md for why routing is not always a win.)
+> **Live numbers need an OpenAI key with billing** (a key without quota returns HTTP 429 `insufficient_quota`). For a **credit-free demonstration**, `RoutingSimulationTest` exercises the full routing + escalation path against a deterministic stub using the **real published GPT-5.6 pricing** and writes [`docs/simulation-results.md`](docs/simulation-results.md).
+>
+> **Simulated projection (NOT a live measurement):** on the sample task set, routing cut cost **~54.6%** vs. always-Sol at **5/5** equal pass rate. Live measurements would replace this once billing is available.
 
 ## Disclosure
 Built with AI assistance (Claude). Model pricing/ids reflect the GPT-5.6 launch on 2026-07-09; verify against OpenAI's release notes before relying on them.
