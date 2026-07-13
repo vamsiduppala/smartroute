@@ -1,5 +1,6 @@
 package com.vamsi.smartroute.guardrails;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ToolDriftDetector {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // FAIL_ON_TRAILING_TOKENS is off by default in Jackson, which silently ignores anything
+    // after a valid JSON value -- e.g. readValue would happily parse "{\"a\":1} anything-here"
+    // as just {"a":1}. Left at the default, a schema that changed ONLY by appending content
+    // after valid JSON would canonicalize identically to the original and defeat hasDrifted()
+    // entirely -- exactly the "rug pull" scenario this class exists to catch.
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true);
+
     private final Map<String, String> trusted = new ConcurrentHashMap<>();
 
     /** Sort JSON object keys recursively so semantically-identical schemas hash the same. Non-JSON hashes raw. */
