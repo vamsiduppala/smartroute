@@ -60,4 +60,21 @@ class GatewayServiceTest {
         assertEquals("Paris", r.route().answer());
         assertEquals(0.0025, ledger.spent("acme"), 1e-9);   // actual spend booked
     }
+
+    @Test
+    void downgradeDecisionActuallyForcesLunaInsteadOfRoutingNormally() {
+        // spent=$0.001, cap=$0.002: under cap alone, but this call's tiny estimate (~$0.0015)
+        // would push the tenant over -> BudgetGuard.evaluate returns DOWNGRADE, not ALLOW/REJECT.
+        SpendLedger ledger = new SpendLedger();
+        ledger.add("acme", 0.001);
+        when(router.routeFrom(any(), any(), eq(Tier.LUNA))).thenReturn(sampleRoute(0.0001));
+        GatewayService g = gatewayWith(ledger, 0.002);
+
+        GatewayResult r = g.handle("acme", "What is the capital of France?");
+
+        assertTrue(r.allowed());
+        assertEquals("DOWNGRADE", r.budgetDecision());
+        verify(router).routeFrom(any(), any(), eq(Tier.LUNA));   // actually forced Luna...
+        verify(router, never()).route(any(), any());             // ...not the normal classifier-driven path
+    }
 }

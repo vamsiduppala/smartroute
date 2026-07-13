@@ -89,4 +89,25 @@ class SmartRouteServiceTest {
         assertEquals(3, r.attempts());           // Luna -> Terra -> Sol, then stop (escalate() returns null)
         assertFalse(r.passed());
     }
+
+    @Test
+    void routeFromForcesTheGivenStartTierOverTheClassifier() {
+        String prompt = "Architect and derive a proof for an optimized recursive algorithm, step by step.";
+        // Confirm the premise: left to itself, the classifier would NOT start this at Luna
+        // (hard-complexity signals: "architect", "derive", "algorithm", "step by step").
+        assertNotEquals(Tier.LUNA, classifier.classify(prompt).startTier());
+
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("42", 10, 8));
+        SmartRouteService router = new SmartRouteService(chatModel, classifier);
+
+        // routeFrom must override the classifier and force Luna anyway -- this is what
+        // GatewayService uses to actually carry out a BudgetGuard DOWNGRADE decision,
+        // instead of just labeling the response and routing normally regardless.
+        RouteResult r = router.routeFrom(prompt, Validator.nonEmpty(), Tier.LUNA);
+
+        assertEquals(Tier.LUNA, r.startTier());
+        assertEquals(Tier.LUNA, r.tierUsed());
+        assertEquals(1, r.attempts());
+    }
 }

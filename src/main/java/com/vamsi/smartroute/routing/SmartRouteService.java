@@ -26,7 +26,20 @@ public class SmartRouteService {
 
     public RouteResult route(String prompt, Validator validator) {
         var classification = classifier.classify(prompt);
-        Tier tier = classification.startTier();
+        return routeFrom(prompt, validator, classification.startTier(), classification.reason());
+    }
+
+    /**
+     * Force a starting tier instead of letting the classifier pick one — e.g. governance
+     * calling this with {@link Tier#LUNA} to actually carry out a BudgetGuard DOWNGRADE
+     * decision, rather than just labeling the response and routing normally anyway.
+     */
+    public RouteResult routeFrom(String prompt, Validator validator, Tier startTier) {
+        return routeFrom(prompt, validator, startTier, "forced start tier: " + startTier);
+    }
+
+    private RouteResult routeFrom(String prompt, Validator validator, Tier startTier, String startReason) {
+        Tier tier = startTier;
 
         long totalIn = 0, totalOut = 0;
         double totalCost = 0.0;   // billed per attempt at THAT attempt's tier rate
@@ -54,8 +67,8 @@ public class SmartRouteService {
             tier = tier.escalate();   // cheaper tier failed the check — climb one rung
         }
 
-        return new RouteResult(answer, classification.startTier(), used, attempts,
-                totalIn, totalOut, totalCost, passed, classification.reason());
+        return new RouteResult(answer, startTier, used, attempts,
+                totalIn, totalOut, totalCost, passed, startReason);
     }
 
     private static long asLong(Object tokenCount) {

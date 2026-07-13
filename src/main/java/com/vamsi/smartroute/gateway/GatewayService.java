@@ -3,6 +3,7 @@ package com.vamsi.smartroute.gateway;
 import com.vamsi.smartroute.governance.BudgetGuard;
 import com.vamsi.smartroute.governance.SpendLedger;
 import com.vamsi.smartroute.guardrails.PromptInjectionScanner;
+import com.vamsi.smartroute.model.Tier;
 import com.vamsi.smartroute.routing.ComplexityClassifier;
 import com.vamsi.smartroute.routing.RouteResult;
 import com.vamsi.smartroute.routing.SmartRouteService;
@@ -55,7 +56,11 @@ public class GatewayService {
                     List.of("cap=$" + budgetGuard.capFor(tenant), "spent=$" + ledger.spent(tenant)));
         }
 
-        RouteResult result = router.route(prompt, Validator.nonEmpty());
+        // DOWNGRADE means "this tenant would go over cap at the classifier's tier" -- actually
+        // force the cheapest tier instead of just labeling the response and routing normally.
+        RouteResult result = decision == BudgetGuard.Decision.DOWNGRADE
+                ? router.routeFrom(prompt, Validator.nonEmpty(), Tier.LUNA)
+                : router.route(prompt, Validator.nonEmpty());
         ledger.add(tenant, result.costUsd());   // book actual spend
         return GatewayResult.ok(result, decision);
     }
