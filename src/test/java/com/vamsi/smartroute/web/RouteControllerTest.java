@@ -87,6 +87,15 @@ class RouteControllerTest {
                 .andExpect(status().isUnsupportedMediaType());
     }
 
+    @Test
+    void unknownPathGetsNotFoundNotServerError() throws Exception {
+        // An unmapped URL throws NoResourceFoundException on Spring 6.1+; without an explicit
+        // handler the broad Exception catch-all shadows it into a misleading 500. A plain wrong
+        // URL should be a clean 404 -- same shadowing bug class as the 400/405/415 cases above.
+        mvc.perform(get("/no-such-endpoint"))
+                .andExpect(status().isNotFound());
+    }
+
     // Note: a second-pass review also flagged HttpMediaTypeNotAcceptableException (bad Accept
     // header -> 406) as a sibling gap to the 415 case above. Written as a test (POST /route
     // with Accept: application/xml) and it does NOT reproduce here -- actual result was 200,

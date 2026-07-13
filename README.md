@@ -6,7 +6,7 @@
 ![Java 21](https://img.shields.io/badge/Java-21-blue)
 ![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-brightgreen)
 ![Spring AI 1.0](https://img.shields.io/badge/Spring%20AI-1.0-brightgreen)
-![Tests](https://img.shields.io/badge/tests-84%20green-success)
+![Tests](https://img.shields.io/badge/tests-85%20green-success)
 ![License MIT](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
@@ -38,7 +38,7 @@ chatModel.call(new Prompt(prompt, options));
 - **Honest cost accounting, not a vanity metric.** A failed Luna attempt *before* escalating to Sol means you paid for **both**. Cost is therefore accumulated **per attempt at that attempt's own rate** — a naive "charge the final tier" model understates real spend, and under-shooting the classifier can cost *more* than going straight to Sol. SmartRoute measures the real thing.
 - **Savings claims are gated on quality parity.** The benchmark reports routed-pass vs. baseline-pass side by side; a savings % is meaningless if routed answers pass fewer tasks. Both numbers, always.
 - **Concurrency-safe budgets, proven under load.** Per-tenant spend caps use a single atomic `compute` that decides *and* reserves in one step — closing a real check-then-act (TOCTOU) race. Verified with a 50-thread / 500-request stress test that reproducibly over-admits on the naive implementation and holds exactly at cap on the fixed one.
-- **84 tests, green on every push.** Unit tests, `@WebMvcTest` per-controller web slices, and end-to-end flows (allow / blocked / downgrade) through the real embedded server — plus a credit-free routing simulation on real published pricing.
+- **85 tests, green on every push.** Unit tests, `@WebMvcTest` per-controller web slices, and end-to-end flows (allow / blocked / downgrade) through the real embedded server — plus a credit-free routing simulation on real published pricing.
 - **Production-shaped.** Multi-stage `Dockerfile`, Kubernetes manifests with liveness/readiness wired to Actuator health groups, OpenAPI/Swagger UI, per-tier cost/latency telemetry via Micrometer, and dependencies patch-pinned against known CVEs.
 
 ## Architecture
