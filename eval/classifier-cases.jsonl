@@ -1,0 +1,18 @@
+{"id":"c1","prompt":"What is the capital of France?","expectStart":"LUNA","intent":"trivial factual lookup"}
+{"id":"c2","prompt":"Return only the value of 2+2.","expectStart":"LUNA","intent":"trivial arithmetic"}
+{"id":"c3","prompt":"In one word, what color is a clear daytime sky?","expectStart":"LUNA","intent":"trivial one-word answer"}
+{"id":"c4","prompt":"What does HTTP status 404 mean? One sentence.","expectStart":"LUNA","intent":"simple definition"}
+{"id":"c5","prompt":"Translate 'good morning' into Spanish.","expectStart":"LUNA","intent":"simple translation"}
+{"id":"c6","prompt":"List three primary colors.","expectStart":"LUNA","intent":"trivial enumeration"}
+{"id":"c7","prompt":"Write a Java method signature (no body) named isPrime that takes an int and returns boolean.","expectStart":"TERRA","intent":"light code shape, no reasoning"}
+{"id":"c8","prompt":"Derive the time complexity of binary search on a sorted array and state it in Big-O.","expectStart":"TERRA","intent":"single-step reasoning with a complexity signal"}
+{"id":"c9","prompt":"Explain the trade-off between a hash map and a balanced tree for lookups.","expectStart":"TERRA","intent":"moderate design trade-off, short"}
+{"id":"c10","prompt":"Give the regex for a US ZIP+4 code with a digit quantifier.","expectStart":"TERRA","intent":"regex construction"}
+{"id":"c11","prompt":"Summarize why TCP uses a three-way handshake.","expectStart":"LUNA","intent":"short factual explanation, no hard signals"}
+{"id":"c12","prompt":"Refactor this to remove the race condition and explain why: two threads increment a shared int without synchronization. Mention AtomicInteger or synchronized.","expectStart":"SOL","intent":"concurrency + refactor, multiple hard signals"}
+{"id":"c13","prompt":"Optimize this algorithm and prove its complexity: ```for(i..n){for(j..n){...}}```","expectStart":"SOL","intent":"optimize + prove + complexity + code fence"}
+{"id":"c14","prompt":"Design a multi-step architecture for a rate limiter and discuss the concurrency trade-offs step by step.","expectStart":"SOL","intent":"architecture + concurrency + multi-step design"}
+{"id":"c15","prompt":"Prove that the sum of the first n odd numbers equals n squared, deriving each step.","expectStart":"SOL","intent":"formal proof + derivation"}
+{"id":"c16","prompt":"Given this recursion, derive a closed form and analyze its complexity for large n.","expectStart":"SOL","intent":"recursion + derive + complexity"}
+{"id":"c17","prompt":"Write a haiku about autumn leaves falling gently in a quiet garden at dusk.","expectStart":"LUNA","intent":"short creative, no hard signals"}
+{"id":"c18","prompt":"Refactor this large module for readability and explain the design decisions behind each change to the class structure using public static factory methods where appropriate.","expectStart":"SOL","intent":"refactor + design + code keywords"}

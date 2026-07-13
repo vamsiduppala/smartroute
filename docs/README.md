@@ -25,4 +25,7 @@ engineering material.
 ## Results & writing
 - **[simulation-results.md](simulation-results.md)** — a credit-free routing cost projection on
   real published GPT-5.6 pricing (clearly labeled as a projection, not a live measurement).
+- **[classifier-calibration.md](classifier-calibration.md)** — a credit-free calibration of the
+  tier-picking heuristic against a hand-labeled corpus: where it hits the intended tier, where it
+  undershoots (safe — escalation recovers it), and that it never overshoots (never overspends).
 - **[blog/](blog/)** — a technical writeup on treating GPT-5.6's price tiers as a routing problem.
