@@ -110,6 +110,3 @@ a drive-by bump.
   scaffolding, so they're on the roadmap rather than faked.
 - **Container build verification.** The `Dockerfile` passes `hadolint` static linting; building and
   smoke-running the actual image is the remaining step, pending an environment with a Docker daemon.
-- **Mockito inline-mock-maker.** Test runs currently log a self-attach warning; the durable fix is
-  wiring Mockito as a proper `-javaagent`. JDK 21 (the target) still supports self-attaching, so
-  this is a future-compatibility item, not a current failure.

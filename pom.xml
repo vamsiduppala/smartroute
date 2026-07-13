@@ -103,6 +103,29 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- Load Mockito as a proper -javaagent instead of letting it self-attach at runtime.
+                 Silences the "Mockito is currently self-attaching ... will no longer work in future
+                 releases of the JDK" warning and is the forward-compatible setup. The dependency
+                 plugin's `properties` goal exposes each dependency jar's path as a property; surefire
+                 then loads mockito-core as the agent. mockito-core's version stays BOM-managed. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -110,8 +110,8 @@ class EvalRunnerTest {
         SmartRouteService router = mock(SmartRouteService.class);
 
         // Baseline (Sol) answers "Paris" with a small token usage for every call. Build the real
-        // response object (final accessors can't be stubbed without the inline mock-maker, which
-        // docs/ENGINEERING.md flags as deprecated on future JDKs) — same pattern as SmartRouteServiceTest.
+        // response object (final accessors can't be stubbed without the inline mock-maker, whose
+        // self-attach is deprecated on future JDKs) — same pattern as SmartRouteServiceTest.
         when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("Paris", 100, 50));
 
         // Routing succeeds for the good task and throws for the bad one.
