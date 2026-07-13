@@ -38,6 +38,15 @@
              exploitable here: this app has no web.xml, no Spring Security, no servlet-level
              security constraints configured anywhere. Patched regardless. -->
         <tomcat.version>10.1.57</tomcat.version>
+        <!-- Same reasoning again: 3.4.13's BOM manages spring-framework at 6.2.15. CVE-2026-22740
+             (Medium: WebFlux multipart temp files not always deleted, DoS via disk exhaustion)
+             affects 6.2.0-6.2.17, fixed in 6.2.18. This app runs Spring MVC, not a WebFlux
+             server, and never handles multipart requests: spring-webflux is only present
+             transitively (Spring AI's reactive HTTP client), not serving anything here, so
+             not exploitable even in the narrower sense the Jackson/Tomcat overrides were.
+             Patched to the latest 6.2.x patch (6.2.19) anyway, tested carefully since this is
+             the core framework, not a leaf dependency. -->
+        <spring-framework.version>6.2.19</spring-framework.version>
     </properties>
 
     <dependencyManagement>
