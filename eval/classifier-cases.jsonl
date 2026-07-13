@@ -16,3 +16,8 @@
 {"id":"c16","prompt":"Given this recursion, derive a closed form and analyze its complexity for large n.","expectStart":"SOL","intent":"recursion + derive + complexity"}
 {"id":"c17","prompt":"Write a haiku about autumn leaves falling gently in a quiet garden at dusk.","expectStart":"LUNA","intent":"short creative, no hard signals"}
 {"id":"c18","prompt":"Refactor this large module for readability and explain the design decisions behind each change to the class structure using public static factory methods where appropriate.","expectStart":"SOL","intent":"refactor + design + code keywords"}
+{"id":"c19","prompt":"Convert 10 miles to kilometers.","expectStart":"LUNA","intent":"trivial unit conversion"}
+{"id":"c20","prompt":"What year did the Apollo 11 Moon landing happen?","expectStart":"LUNA","intent":"trivial factual recall"}
+{"id":"c21","prompt":"Refactor this loop for readability: ```for(int i=0;i<n;i++){ sum+=a[i]; }```","expectStart":"TERRA","intent":"refactor inflection + code fence → lands exactly at Terra"}
+{"id":"c22","prompt":"Optimize this algorithm and prove its worst-case complexity: ```int f(int n){ return n<2?n:f(n-1)+f(n-2); }```","expectStart":"SOL","intent":"optimize + prove + complexity + code fence → lands exactly at Sol"}
+{"id":"c23","prompt":"Optimizing the attached recursive solution, derive its time complexity and prove correctness: ```code```","expectStart":"SOL","intent":"inflected optimizing/deriving + recursion + code → lands exactly at Sol"}

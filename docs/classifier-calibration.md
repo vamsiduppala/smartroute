@@ -10,7 +10,7 @@ keywords), so it diverges from intent. Direction is what matters:
 attempt), **overshoot** is not (there is no de-escalation, so it overspends every
 time). The heuristic is tuned to prefer undershoot.
 
-Cases: 18  ·  **exact: 10 (56%)**  ·  undershoot: 8  ·  overshoot: 0
+Cases: 23  ·  **exact: 15 (65%)**  ·  undershoot: 8  ·  overshoot: 0
 
 | case | intended start | classifier start | vs. intent | why |
 |------|----------------|------------------|-----------|-----|
@@ -32,6 +32,11 @@ Cases: 18  ·  **exact: 10 (56%)**  ·  undershoot: 8  ·  overshoot: 0
 | c16 | SOL | TERRA | under ↓ | recursion + derive + complexity |
 | c17 | LUNA | LUNA | exact | short creative, no hard signals |
 | c18 | SOL | TERRA | under ↓ | refactor + design + code keywords |
+| c19 | LUNA | LUNA | exact | trivial unit conversion |
+| c20 | LUNA | LUNA | exact | trivial factual recall |
+| c21 | TERRA | TERRA | exact | refactor inflection + code fence → lands exactly at Terra |
+| c22 | SOL | SOL | exact | optimize + prove + complexity + code fence → lands exactly at Sol |
+| c23 | SOL | SOL | exact | inflected optimizing/deriving + recursion + code → lands exactly at Sol |
 **Reading this:** overshoot is 0 by design — the classifier never starts above the
 intended tier on this corpus, so it never overspends. The undershoots are the
 heuristic being conservative (e.g. a proof phrased with "deriving" rather than
