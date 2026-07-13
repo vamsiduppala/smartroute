@@ -107,7 +107,7 @@ curl -s localhost:8080/gateway/route -H 'content-type: application/json' \
 
 ## The cost model & benchmark
 
-`eval/tasks.jsonl` holds a fixed task set spanning trivial → hard. `EvalRunner` answers each **twice** — always-Sol baseline vs. routed — and writes `eval/results.md` with per-task tiers, attempts, and cost.
+`eval/tasks.jsonl` holds a fixed task set spanning trivial → hard. `EvalRunner` answers each **twice** — always-Sol baseline vs. routed — and writes `eval/results.md` with per-task tiers, attempts, and cost, plus how often the classifier's first pick was right (i.e. answered with no escalation).
 
 > **Live numbers need an OpenAI key with billing.** For a **credit-free demonstration**, `RoutingSimulationTest` exercises the full routing + escalation path against a deterministic stub using **real published GPT-5.6 pricing** and writes [`docs/simulation-results.md`](docs/simulation-results.md).
 >
