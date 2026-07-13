@@ -47,7 +47,7 @@ flowchart LR
     R --> LG[SpendLedger: book spend]
 ```
 
-51 tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
+63 tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
 
 ## API docs
 Swagger UI is at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is running — every endpoint below is documented and callable from there.
