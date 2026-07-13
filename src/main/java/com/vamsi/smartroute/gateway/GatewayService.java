@@ -16,9 +16,11 @@ import java.util.List;
 /**
  * The gateway pass — the layers wrapping the router, in order:
  *   1. guardrails: reject prompt-injection before it reaches a model;
- *   2. governance: estimate cost at the start tier and reject if the tenant is over budget;
+ *   2. governance: estimate cost at the start tier and ATOMICALLY reserve it against the
+ *      tenant's budget (BudgetGuard.evaluateAndReserve) -- closes a real TOCTOU race where two
+ *      concurrent requests could otherwise both pass the check before either books spend;
  *   3. routing: delegate to SmartRouteService (tier selection + escalation);
- *   4. book the actual spend to the tenant's ledger.
+ *   4. reconcile: true up the ledger from the reservation to the ACTUAL cost once known.
  * (Telemetry is recorded cross-cuttingly by RouterTelemetryAspect around step 3.)
  */
 @Service
@@ -51,7 +53,9 @@ public class GatewayService {
         long estOutputTokens = 256;
         double estimate = classification.startTier().costUsd(estInputTokens, estOutputTokens);
 
-        var decision = budgetGuard.evaluate(tenant, estimate);
+        // Atomically decide AND reserve `estimate` in one step -- see evaluateAndReserve's
+        // javadoc for why a separate read-then-later-write was a real concurrency bug.
+        var decision = budgetGuard.evaluateAndReserve(tenant, estimate);
         if (decision == BudgetGuard.Decision.REJECT) {
             return GatewayResult.blocked("budget-exceeded",
                     List.of("cap=$" + budgetGuard.capFor(tenant), "spent=$" + ledger.spent(tenant)));
@@ -66,12 +70,13 @@ public class GatewayService {
                     : router.route(prompt, Validator.nonEmpty());
         } catch (PartialRouteException partial) {
             // An earlier attempt in this same request may have already incurred real cost
-            // before the model call that ultimately failed -- book it before the failure
-            // propagates, or that spend goes untracked against the tenant's budget entirely.
-            ledger.add(tenant, partial.partialResult().costUsd());
+            // before the model call that ultimately failed -- true up the ledger from the
+            // reservation to that partial actual cost before the failure propagates, or the
+            // reservation permanently overstates (or understates) this tenant's real spend.
+            ledger.add(tenant, partial.partialResult().costUsd() - estimate);
             throw partial;
         }
-        ledger.add(tenant, result.costUsd());   // book actual spend
+        ledger.add(tenant, result.costUsd() - estimate);   // true up: reservation -> actual cost
         return GatewayResult.ok(result, decision);
     }
 }

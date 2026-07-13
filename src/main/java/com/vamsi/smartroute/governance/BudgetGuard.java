@@ -31,16 +31,19 @@ public class BudgetGuard {
     public double capFor(String tenant) { return caps.getOrDefault(tenant, defaultCap); }
 
     /**
-     * Decide before spending:
-     *  REJECT    — tenant already at/over cap;
-     *  DOWNGRADE — this call would push them over (route to a cheaper tier instead);
-     *  ALLOW     — comfortably under cap.
+     * Decide before spending, AND atomically reserve {@code estimatedCostUsd} against the
+     * tenant's ledger in the same step (unless REJECT) -- closing a TOCTOU race where two
+     * concurrent callers could otherwise both read the same pre-spend total and both get
+     * admitted. Named "...AndReserve" deliberately: this has a side effect, unlike a plain
+     * "evaluate". Caller MUST reconcile afterward via
+     * {@code ledger.add(tenant, actualCostUsd - estimatedCostUsd)} once the real cost is known
+     * (see GatewayService), or the reservation permanently overstates the tenant's spend.
+     *
+     *  REJECT    — tenant already at/over cap. Nothing reserved.
+     *  DOWNGRADE — this call would push them over (route to a cheaper tier instead). Reserved.
+     *  ALLOW     — comfortably under cap. Reserved.
      */
-    public Decision evaluate(String tenant, double estimatedCostUsd) {
-        double spent = ledger.spent(tenant);
-        double cap = capFor(tenant);
-        if (spent >= cap) return Decision.REJECT;
-        if (spent + estimatedCostUsd > cap) return Decision.DOWNGRADE;
-        return Decision.ALLOW;
+    public Decision evaluateAndReserve(String tenant, double estimatedCostUsd) {
+        return ledger.reserveIfWithinCap(tenant, estimatedCostUsd, capFor(tenant));
     }
 }

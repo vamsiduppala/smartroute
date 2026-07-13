@@ -13,17 +13,17 @@ class BudgetGuardTest {
 
     @Test
     void allowsWhenComfortablyUnderCap() {
-        assertEquals(BudgetGuard.Decision.ALLOW, guardWith(10.0, 0).evaluate("t", 1.0));
+        assertEquals(BudgetGuard.Decision.ALLOW, guardWith(10.0, 0).evaluateAndReserve("t", 1.0));
     }
 
     @Test
     void downgradesWhenCallWouldExceedCap() {
-        assertEquals(BudgetGuard.Decision.DOWNGRADE, guardWith(10.0, 9.5).evaluate("t", 1.0));
+        assertEquals(BudgetGuard.Decision.DOWNGRADE, guardWith(10.0, 9.5).evaluateAndReserve("t", 1.0));
     }
 
     @Test
     void rejectsWhenAtOrOverCap() {
-        assertEquals(BudgetGuard.Decision.REJECT, guardWith(10.0, 10.0).evaluate("t", 0.5));
+        assertEquals(BudgetGuard.Decision.REJECT, guardWith(10.0, 10.0).evaluateAndReserve("t", 0.5));
     }
 
     @Test
