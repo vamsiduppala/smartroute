@@ -15,7 +15,13 @@ import java.util.regex.Pattern;
 public class ComplexityClassifier {
 
     private static final Pattern HARD_SIGNALS = Pattern.compile(
-            "\\b(prove|derive|optimi[sz]e|refactor|concurren|race condition|"
+            // "concurren\\w*" (not the bare "concurren"): a trailing \b requires "concurren"
+            // itself to be a complete word, and it never is in real text -- always
+            // "concurrent"/"concurrency"/"concurrently". Without \w*, this branch could never
+            // fire on any real sentence, silently dropping an entire hard-signal category
+            // (found via independent review; regression test:
+            // ComplexityClassifierTest.concurrencyRelatedPromptsRegisterAsAHardSignal).
+            "\\b(prove|derive|optimi[sz]e|refactor|concurren\\w*|race condition|"
           + "algorithm|complexity|regex|recursion|multi-step|step by step|"
           + "architect|design a|trade-?off)\\b",
             Pattern.CASE_INSENSITIVE);

@@ -47,4 +47,18 @@ class ComplexityClassifierTest {
         assertEquals(2, c.score());
         assertEquals(Tier.TERRA, c.startTier());
     }
+
+    @Test
+    void concurrencyRelatedPromptsRegisterAsAHardSignal() {
+        // Regression coverage (independent review finding): the HARD_SIGNALS pattern has
+        // "concurren" wrapped in \b...\b -- but that requires "concurren" itself to be a
+        // COMPLETE word, and it isn't one; real text always continues into "concurrent",
+        // "concurrency", or "concurrently", none of which have a word boundary right after
+        // "concurren". The pattern could never fire on any real English sentence, silently
+        // dropping an entire category of hard-complexity signal (the "race condition"
+        // alternative right next to it in the same pattern is a strong hint this was meant
+        // to catch concurrency bugs specifically).
+        var c = classifier.classify("Fix this concurrency bug in the shared counter.");
+        assertTrue(c.score() >= 1, "expected \"concurrency\" to register as a hard signal, got score " + c.score());
+    }
 }
