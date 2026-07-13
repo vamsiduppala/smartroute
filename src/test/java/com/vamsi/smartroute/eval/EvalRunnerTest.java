@@ -1,8 +1,15 @@
 package com.vamsi.smartroute.eval;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vamsi.smartroute.model.Tier;
+import com.vamsi.smartroute.routing.RouteResult;
 import com.vamsi.smartroute.routing.SmartRouteService;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 
@@ -83,5 +90,50 @@ class EvalRunnerTest {
         verify(chatModel, times(2)).call(any(Prompt.class));
         // A baseline failure short-circuits before routing, so the router is never reached.
         verify(router, never()).route(any(), any());
+    }
+
+    @Test
+    void aggregatesPassCountsAcrossAMixedSuccessAndErrorRun() {
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        SmartRouteService router = mock(SmartRouteService.class);
+
+        // Baseline (Sol) answers "paris" with a small token usage for every call.
+        // doReturn(..) avoids coupling the test to Spring AI's Integer-vs-Long token getters.
+        Usage usage = mock(Usage.class);
+        doReturn(100).when(usage).getPromptTokens();
+        doReturn(50).when(usage).getCompletionTokens();
+        ChatResponseMetadata meta = mock(ChatResponseMetadata.class);
+        when(meta.getUsage()).thenReturn(usage);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(message.getText()).thenReturn("Paris");
+        Generation generation = mock(Generation.class);
+        when(generation.getOutput()).thenReturn(message);
+        ChatResponse response = mock(ChatResponse.class);
+        when(response.getResult()).thenReturn(generation);
+        when(response.getMetadata()).thenReturn(meta);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+
+        // Routing succeeds for the good task and throws for the bad one.
+        RouteResult routed = new RouteResult("Paris", Tier.LUNA, Tier.LUNA, 1, 100, 50, 0.0004, true, "simple");
+        when(router.route(eq("good"), any())).thenReturn(routed);
+        when(router.route(eq("bad"), any())).thenThrow(new RuntimeException("router blew up"));
+
+        EvalRunner runner = new EvalRunner(router, chatModel);
+        List<EvalRunner.Task> tasks = List.of(
+                new EvalRunner.Task("good", "good", "paris"),   // baseline + routed both pass
+                new EvalRunner.Task("bad", "bad", "paris"));    // baseline passes, routing errors
+
+        EvalRunner.EvalReport report = runner.runBenchmark(tasks);
+        String md = report.markdown();
+
+        assertEquals(2, report.tasks());
+        assertEquals(1, report.errored());
+        // Both baselines answered "Paris" which matches expect "paris" (case-insensitive) -> 2/2.
+        assertTrue(md.contains("Baseline (always Sol) pass: 2/2"), md);
+        // Only the good task made it through routing -> 1/2.
+        assertTrue(md.contains("Routed pass: 1/2"), md);
+        assertTrue(md.contains("Errored: 1"), md);
+        assertTrue(md.contains("✅"), "the good task renders as a pass");
+        assertTrue(md.contains("⚠️ error"), "the bad task renders as an error row");
     }
 }
