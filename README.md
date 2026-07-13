@@ -47,7 +47,7 @@ flowchart LR
     R --> LG[SpendLedger: book spend]
 ```
 
-72 tests across the modules, all green (CI on every push) — unit tests, `@WebMvcTest` web-layer slices per controller, and a full end-to-end test through the real embedded server. See `docs/*-NOTES.md` for per-module design.
+73 tests across the modules, all green (CI on every push) — unit tests (including a real concurrency stress test for the budget reservation logic), `@WebMvcTest` web-layer slices per controller, and a full end-to-end test through the real embedded server. See `docs/*-NOTES.md` for per-module design.
 
 ## API docs
 Swagger UI is at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is running — every endpoint below is documented and callable from there.
