@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +56,23 @@ class RouteControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{not valid json"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void wrongHttpMethodGetsMethodNotAllowedNotServerError() throws Exception {
+        // /route is POST-only; Spring normally maps this to 405, but GlobalExceptionHandler's
+        // broad Exception catch-all can shadow that the same way it shadowed 400 for malformed
+        // JSON -- same bug class, different exception type.
+        mvc.perform(get("/route"))
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
+    void unsupportedContentTypeGetsUnsupportedMediaTypeNotServerError() throws Exception {
+        mvc.perform(post("/route")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("prompt=hi"))
+                .andExpect(status().isUnsupportedMediaType());
     }
 
     @Test
