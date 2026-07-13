@@ -149,4 +149,26 @@ class SmartRouteServiceTest {
         assertEquals(1, thrown.partialResult().attempts());
         assertEquals(0.0, thrown.partialResult().costUsd(), 1e-12);
     }
+
+    @Test
+    void malformedResponseAfterAnEarlierSuccessAlsoPreservesThatCost() {
+        // Regression coverage (independent review finding): the call itself can SUCCEED but
+        // return a malformed response (no generations) that throws while being PARSED --
+        // response.getResult().getOutput().getText(). An earlier version's try/catch only
+        // wrapped chatModel.call(...) itself, so a parsing failure here propagated as a bare
+        // exception and Luna's already-real cost would have been lost, same as if the call had
+        // thrown outright.
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        ChatResponse malformed = new ChatResponse(List.of());   // no generations -> getResult() throws
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(responseOf("I cannot help with that", 10, 5))   // Luna: rejected, real cost
+                .thenReturn(malformed);                                     // Terra: "succeeds" but is malformed
+        SmartRouteService router = new SmartRouteService(chatModel, classifier);
+
+        PartialRouteException thrown = assertThrows(PartialRouteException.class,
+                () -> router.route("What is 6 times 7?", Validator.nonEmpty()));
+
+        assertEquals(Tier.LUNA.costUsd(10, 5), thrown.partialResult().costUsd(), 1e-12);
+        assertEquals(1, thrown.partialResult().attemptRecords().size());   // only Luna's real attempt
+    }
 }

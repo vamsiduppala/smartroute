@@ -57,27 +57,36 @@ public class SmartRouteService {
             used = tier;
 
             var options = OpenAiChatOptions.builder().model(tier.modelId).build();
-            ChatResponse response;
             long attemptStart = System.nanoTime();
+            long in, out;
+            double attemptCost;
             try {
-                response = chatModel.call(new Prompt(prompt, options));
-            } catch (RuntimeException modelCallFailed) {
+                // The whole attempt -- the call itself AND parsing its response -- is inside
+                // this try. A malformed response (e.g. a null result or usage) is just as much
+                // "this attempt produced nothing usable" as the call throwing outright; both
+                // must surface as PartialRouteException, or a bare NPE here would silently drop
+                // whatever real cost earlier attempts already incurred, the exact bug this whole
+                // mechanism exists to prevent. (Found by an independent review pass: an earlier
+                // version only wrapped the call itself, leaving response-parsing exceptions to
+                // propagate bare and leave GatewayService's budget reservation un-reconciled.)
+                ChatResponse response = chatModel.call(new Prompt(prompt, options));
+                answer = response.getResult().getOutput().getText();
+                var usage = response.getMetadata().getUsage();
+                in = asLong(usage.getPromptTokens());
+                out = asLong(usage.getCompletionTokens());
+                attemptCost = tier.costUsd(in, out);   // each failed attempt still costs — at its own rate
+            } catch (RuntimeException attemptFailed) {
                 // Earlier attempts this loop (if any) may have already succeeded and incurred
                 // real cost -- surface it via PartialRouteException instead of losing it to a
                 // bare exception. totalIn/totalOut/totalCost/records only reflect attempts
-                // BEFORE this one; this attempt itself contributed no tokens since it never got
-                // a response, so it never gets an AttemptRecord.
+                // BEFORE this one; this attempt itself contributed no tokens since it never
+                // produced a usable answer, so it never gets an AttemptRecord.
                 RouteResult partial = new RouteResult(answer, startTier, used, attempts,
                         totalIn, totalOut, totalCost, false, startReason, List.copyOf(records));
-                throw new PartialRouteException(partial, modelCallFailed);
+                throw new PartialRouteException(partial, attemptFailed);
             }
             long attemptLatencyMs = (System.nanoTime() - attemptStart) / 1_000_000;
 
-            answer = response.getResult().getOutput().getText();
-            var usage = response.getMetadata().getUsage();
-            long in = asLong(usage.getPromptTokens());
-            long out = asLong(usage.getCompletionTokens());
-            double attemptCost = tier.costUsd(in, out);   // each failed attempt still costs — at its own rate
             totalIn += in;
             totalOut += out;
             totalCost += attemptCost;
