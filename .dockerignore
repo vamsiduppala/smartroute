@@ -1,0 +1,31 @@
+# Keep the Docker build context small and reproducible. The Dockerfile only COPYs
+# pom.xml + src, so nothing else can leak into the image regardless — this purely trims
+# what gets uploaded to the daemon and avoids needless cache invalidation on every build.
+
+# Build output (also rebuilt inside the image's build stage)
+target/
+*.class
+
+# Version control / CI
+.git/
+.gitignore
+.github/
+
+# IDE / editor
+.idea/
+*.iml
+.vscode/
+
+# Local secrets & env (never belong in an image or its context)
+.env
+k8s/secret.yaml
+
+# Docs & project notes — not needed to build or run
+*.md
+docs/
+eval/results.md
+
+# The Maven wrapper isn't used by the Dockerfile (it builds with the maven base image)
+.mvn/
+mvnw
+mvnw.cmd
