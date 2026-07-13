@@ -17,6 +17,10 @@ spec:
       containers:
         - name: smartroute
           image: smartroute:0.1.0
+          # Pinned, locally-built tag (never pushed to a registry): IfNotPresent avoids a
+          # pointless registry pull attempt and reuses the node-local image. Explicit rather
+          # than relying on the version-tag default, which only kicks in for non-":latest" tags.
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
