@@ -91,7 +91,7 @@ public class EvalRunner implements ApplicationRunner {
      */
     EvalReport runBenchmark(List<Task> tasks) {
         double baselineCost = 0, routedCost = 0;
-        int baselinePass = 0, routedPass = 0, errors = 0;
+        int baselinePass = 0, routedPass = 0, errors = 0, firstPickWins = 0;
         int n = tasks.size();
         StringBuilder rows = new StringBuilder();
 
@@ -114,6 +114,8 @@ public class EvalRunner implements ApplicationRunner {
                 RouteResult r = router.route(t.prompt(), check);
                 routedCost += r.costUsd();
                 if (r.passed()) routedPass++;
+                // classifier's start tier answered acceptably with no escalation
+                if (r.passed() && r.attempts() == 1) firstPickWins++;
 
                 rows.append("| ").append(t.id()).append(" | ").append(r.startTier())
                     .append(" | ").append(r.tierUsed()).append(" | ").append(r.attempts())
@@ -134,13 +136,15 @@ public class EvalRunner implements ApplicationRunner {
 
                 Tasks: %d  ·  Baseline (always Sol) pass: %d/%d  ·  Routed pass: %d/%d  ·  Errored: %d
 
+                Classifier first-pick: %d/%d (started at a tier that answered with no escalation — higher means the cheap heuristic is guessing well; escalation covers the rest).
+
                 | task | start | ended | attempts | Sol $ | routed $ | routed pass |
                 |------|-------|-------|----------|-------|----------|-------------|
                 %s
                 **Total Sol-only cost:** $%s  ·  **Total routed cost:** $%s  ·  **Saved: %.1f%%**
 
                 _Quality parity matters more than raw savings: only trust the savings number when routed pass ≈ baseline pass._
-                """.formatted(n, baselinePass, n, routedPass, n, errors, rows,
+                """.formatted(n, baselinePass, n, routedPass, n, errors, firstPickWins, n, rows,
                               fmt(baselineCost), fmt(routedCost), saved);
 
         return new EvalReport(out, n, errors);

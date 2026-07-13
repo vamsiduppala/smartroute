@@ -134,6 +134,8 @@ class EvalRunnerTest {
         // Only the good task made it through routing -> 1/2.
         assertTrue(md.contains("Routed pass: 1/2"), md);
         assertTrue(md.contains("Errored: 1"), md);
+        // The good task passed at its starting tier (attempts == 1) -> first-pick 1/2.
+        assertTrue(md.contains("Classifier first-pick: 1/2"), md);
         assertTrue(md.contains("✅"), "the good task renders as a pass");
         assertTrue(md.contains("⚠️ error"), "the bad task renders as an error row");
     }
