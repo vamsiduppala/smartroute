@@ -1,3 +1,8 @@
+server:
+  # Honor a platform-injected $PORT (Render/Railway/Fly/Heroku all set it) so the same image
+  # runs locally on 8080 and on any PaaS unchanged. Falls back to 8080 when PORT is unset.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: smartroute

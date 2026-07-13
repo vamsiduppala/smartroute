@@ -1,0 +1,24 @@
+# Render Blueprint — one-click deploy of the KEYLESS demo.
+#
+# The `demo` Spring profile swaps in a canned ChatModel (see com.vamsi.smartroute.demo), so the
+# whole gateway — guardrails, budgets, tier routing, telemetry — boots and serves with NO OpenAI
+# key and NO secrets. That makes it safe to host publicly on a free plan as a live walkthrough.
+#
+# To use it: sign in to Render, "New +" -> "Blueprint", point it at this repo. Render reads this
+# file, builds the Dockerfile, and starts the service. Nothing here needs an API key.
+# (The actual deploy needs your own Render account — that step is yours to run.)
+#
+# Once live, the demo endpoints are the ones in the README "Try it in 10 seconds" section, e.g.
+#   curl -s https://<your-service>.onrender.com/gateway/route \
+#     -H 'content-type: application/json' -d '{"prompt":"What is 2+2?"}'
+services:
+  - type: web
+    name: smartroute-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    # Render injects $PORT; application.yml binds server.port to it.
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo

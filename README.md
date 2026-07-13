@@ -126,7 +126,9 @@ Swagger UI at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is ru
 
 ## Deploying
 
-`Dockerfile` builds a multi-stage JRE image; `k8s/` has a Deployment (readiness/liveness on Actuator health groups) + Service + a `secret.example.yaml` template for `OPENAI_API_KEY`. Manifests are schema-validated against Kubernetes 1.31; they're here for review, not a running cluster.
+`Dockerfile` builds a multi-stage JRE image; `k8s/` has a Deployment (readiness/liveness on Actuator health groups) + Service + a `secret.example.yaml` template for `OPENAI_API_KEY`. Manifests are schema-validated against Kubernetes 1.31; they're here for review, not a running cluster. The app binds `server.port` to a platform-injected `$PORT` (Render/Railway/Fly/Heroku), falling back to 8080 locally.
+
+**Host the keyless demo (no secrets):** because the `demo` profile needs no API key, the whole gateway can run publicly on a free plan as a live walkthrough. [`render.yaml`](render.yaml) is a ready Render Blueprint — in Render, **New + → Blueprint**, point it at this repo, and it builds the Dockerfile and starts the service with `SPRING_PROFILES_ACTIVE=demo`. No environment variables, no keys. (Deploying needs your own Render account; the Blueprint is everything up to that click.)
 
 ## Repository layout
 
