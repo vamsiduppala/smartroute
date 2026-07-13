@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/governance")
 @Tag(name = "governance", description = "Per-tenant spend caps, enforced before tokens are spent")
@@ -21,6 +23,12 @@ public class GovernanceController {
     @GetMapping("/spend/{tenant}")
     public SpendResponse spend(@PathVariable String tenant) {
         return new SpendResponse(tenant, ledger.spent(tenant), guard.capFor(tenant));
+    }
+
+    @Operation(summary = "Get spend across every tenant", description = "Admin overview -- SpendLedger.snapshot() existed but had no caller until this endpoint.")
+    @GetMapping("/spend")
+    public Map<String, Double> allSpend() {
+        return ledger.snapshot();
     }
 
     @Operation(summary = "Set a tenant's budget cap")

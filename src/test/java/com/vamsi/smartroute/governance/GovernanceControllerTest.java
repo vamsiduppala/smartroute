@@ -76,4 +76,15 @@ class GovernanceControllerTest {
         mvc.perform(put("/governance/budget/tenant-nocap"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void allSpendReturnsEveryTenantsBooking() throws Exception {
+        ledger.add("tenant-all-a", 1.5);
+        ledger.add("tenant-all-b", 2.5);
+
+        mvc.perform(get("/governance/spend"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tenant-all-a").value(1.5))
+                .andExpect(jsonPath("$.tenant-all-b").value(2.5));
+    }
 }
