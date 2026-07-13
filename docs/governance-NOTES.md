@@ -8,5 +8,5 @@
 
 `BudgetGuard` only computes the ALLOW/DOWNGRADE/REJECT decision — it's `GatewayService` that actually acts on it (forces Luna on DOWNGRADE, blocks on REJECT). See `gateway-NOTES.md` for that wiring, including a bug where DOWNGRADE was computed correctly here but silently not enforced there.
 
-**Endpoints:** `GET /governance/spend/{tenant}`, `PUT /governance/budget/{tenant}?capUsd=` (rejects a negative cap with 400).
+**Endpoints:** `GET /governance/spend/{tenant}`, `GET /governance/spend` (all tenants — wires up `SpendLedger.snapshot()`, which existed with zero callers until this), `PUT /governance/budget/{tenant}?capUsd=` (rejects a negative cap with 400).
 **Tests:** ALLOW/DOWNGRADE/REJECT boundaries + per-tenant cap override (`BudgetGuardTest`, pure logic, no API calls); web-layer validation and wiring (`GovernanceControllerTest`).
