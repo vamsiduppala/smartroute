@@ -53,7 +53,18 @@ public class SmartRouteService {
             used = tier;
 
             var options = OpenAiChatOptions.builder().model(tier.modelId).build();
-            ChatResponse response = chatModel.call(new Prompt(prompt, options));
+            ChatResponse response;
+            try {
+                response = chatModel.call(new Prompt(prompt, options));
+            } catch (RuntimeException modelCallFailed) {
+                // Earlier attempts this loop (if any) may have already succeeded and incurred
+                // real cost -- surface it via PartialRouteException instead of losing it to a
+                // bare exception. totalIn/totalOut/totalCost only reflect attempts BEFORE this
+                // one; this attempt itself contributed no tokens since it never got a response.
+                RouteResult partial = new RouteResult(answer, startTier, used, attempts,
+                        totalIn, totalOut, totalCost, false, startReason);
+                throw new PartialRouteException(partial, modelCallFailed);
+            }
 
             answer = response.getResult().getOutput().getText();
             var usage = response.getMetadata().getUsage();

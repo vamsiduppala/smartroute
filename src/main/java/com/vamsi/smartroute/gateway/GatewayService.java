@@ -5,6 +5,7 @@ import com.vamsi.smartroute.governance.SpendLedger;
 import com.vamsi.smartroute.guardrails.PromptInjectionScanner;
 import com.vamsi.smartroute.model.Tier;
 import com.vamsi.smartroute.routing.ComplexityClassifier;
+import com.vamsi.smartroute.routing.PartialRouteException;
 import com.vamsi.smartroute.routing.RouteResult;
 import com.vamsi.smartroute.routing.SmartRouteService;
 import com.vamsi.smartroute.routing.Validator;
@@ -58,9 +59,18 @@ public class GatewayService {
 
         // DOWNGRADE means "this tenant would go over cap at the classifier's tier" -- actually
         // force the cheapest tier instead of just labeling the response and routing normally.
-        RouteResult result = decision == BudgetGuard.Decision.DOWNGRADE
-                ? router.routeFrom(prompt, Validator.nonEmpty(), Tier.LUNA)
-                : router.route(prompt, Validator.nonEmpty());
+        RouteResult result;
+        try {
+            result = decision == BudgetGuard.Decision.DOWNGRADE
+                    ? router.routeFrom(prompt, Validator.nonEmpty(), Tier.LUNA)
+                    : router.route(prompt, Validator.nonEmpty());
+        } catch (PartialRouteException partial) {
+            // An earlier attempt in this same request may have already incurred real cost
+            // before the model call that ultimately failed -- book it before the failure
+            // propagates, or that spend goes untracked against the tenant's budget entirely.
+            ledger.add(tenant, partial.partialResult().costUsd());
+            throw partial;
+        }
         ledger.add(tenant, result.costUsd());   // book actual spend
         return GatewayResult.ok(result, decision);
     }

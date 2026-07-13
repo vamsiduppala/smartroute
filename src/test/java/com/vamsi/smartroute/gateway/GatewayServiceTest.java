@@ -5,6 +5,7 @@ import com.vamsi.smartroute.governance.SpendLedger;
 import com.vamsi.smartroute.guardrails.PromptInjectionScanner;
 import com.vamsi.smartroute.model.Tier;
 import com.vamsi.smartroute.routing.ComplexityClassifier;
+import com.vamsi.smartroute.routing.PartialRouteException;
 import com.vamsi.smartroute.routing.RouteResult;
 import com.vamsi.smartroute.routing.SmartRouteService;
 import org.junit.jupiter.api.Test;
@@ -76,5 +77,23 @@ class GatewayServiceTest {
         assertEquals("DOWNGRADE", r.budgetDecision());
         verify(router).routeFrom(any(), any(), eq(Tier.LUNA));   // actually forced Luna...
         verify(router, never()).route(any(), any());             // ...not the normal classifier-driven path
+    }
+
+    @Test
+    void partialRouteFailureStillBooksWhateverCostWasIncurredBeforePropagating() {
+        // Before this fix, a PartialRouteException from the router would propagate straight
+        // out of handle() and the ledger.add(...) line would never run -- any real cost from
+        // an earlier attempt in that same request would go completely untracked.
+        SpendLedger ledger = new SpendLedger();
+        RouteResult partial = new RouteResult("", Tier.LUNA, Tier.TERRA, 2, 10, 5, 0.0025, false, "simple");
+        PartialRouteException failure = new PartialRouteException(partial, new RuntimeException("upstream 503"));
+        when(router.route(any(), any())).thenThrow(failure);
+        GatewayService g = gatewayWith(ledger, 10.0);
+
+        PartialRouteException thrown = assertThrows(PartialRouteException.class,
+                () -> g.handle("acme", "What is the capital of France?"));
+
+        assertSame(failure, thrown);                          // rethrown, not swallowed
+        assertEquals(0.0025, ledger.spent("acme"), 1e-9);      // but the partial cost was still booked first
     }
 }

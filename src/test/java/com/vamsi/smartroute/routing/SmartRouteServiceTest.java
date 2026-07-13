@@ -110,4 +110,43 @@ class SmartRouteServiceTest {
         assertEquals(Tier.LUNA, r.tierUsed());
         assertEquals(1, r.attempts());
     }
+
+    @Test
+    void modelFailureAfterAnEarlierSuccessPreservesThatCostInAPartialRouteException() {
+        // Luna succeeds (rejected -> escalates, real cost incurred) then Terra's call itself
+        // throws (network error, upstream 5xx, etc.) -- before this fix, that exception would
+        // propagate bare and Luna's already-real cost would be lost entirely: never booked to
+        // the ledger, never recorded by telemetry, even though the tokens were genuinely spent.
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        RuntimeException upstreamFailure = new RuntimeException("simulated upstream 503");
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(responseOf("I cannot help with that", 10, 5))   // Luna: rejected, real cost
+                .thenThrow(upstreamFailure);                                // Terra: the call itself fails
+        SmartRouteService router = new SmartRouteService(chatModel, classifier);
+
+        PartialRouteException thrown = assertThrows(PartialRouteException.class,
+                () -> router.route("What is 6 times 7?", Validator.nonEmpty()));
+
+        assertSame(upstreamFailure, thrown.getCause());
+        RouteResult partial = thrown.partialResult();
+        assertEquals(2, partial.attempts());               // Luna (counted) + the failed Terra attempt
+        assertEquals(Tier.TERRA, partial.tierUsed());       // the tier that was in progress when it failed
+        assertFalse(partial.passed());
+        // Only Luna's cost -- the failed Terra attempt contributed zero tokens, no response came back.
+        assertEquals(Tier.LUNA.costUsd(10, 5), partial.costUsd(), 1e-12);
+    }
+
+    @Test
+    void modelFailureOnTheFirstAttemptStillReportsZeroPartialCost() {
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        RuntimeException upstreamFailure = new RuntimeException("simulated upstream 503");
+        when(chatModel.call(any(Prompt.class))).thenThrow(upstreamFailure);
+        SmartRouteService router = new SmartRouteService(chatModel, classifier);
+
+        PartialRouteException thrown = assertThrows(PartialRouteException.class,
+                () -> router.route("What is the capital of France?", Validator.nonEmpty()));
+
+        assertEquals(1, thrown.partialResult().attempts());
+        assertEquals(0.0, thrown.partialResult().costUsd(), 1e-12);
+    }
 }

@@ -2,6 +2,7 @@ package com.vamsi.smartroute.observability;
 
 import com.vamsi.smartroute.model.Tier;
 import com.vamsi.smartroute.routing.ComplexityClassifier;
+import com.vamsi.smartroute.routing.PartialRouteException;
 import com.vamsi.smartroute.routing.SmartRouteService;
 import com.vamsi.smartroute.routing.Validator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -18,6 +19,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -69,5 +71,25 @@ class RouterTelemetryAspectTest {
 
         assertEquals(1, telemetry.totalCalls());
         assertEquals(Tier.LUNA.costUsd(10, 8), telemetry.totalCostUsd(), 1e-12);
+    }
+
+    @Test
+    void recordsPartialCostWhenAModelCallFailsMidEscalation() {
+        // Regression coverage: before PartialRouteException existed, a mid-escalation failure
+        // propagated as a bare exception and this aspect's pjp.proceed() call would throw
+        // before ever reaching the telemetry.record(...) line -- Luna's real cost here would
+        // have been silently dropped from telemetry entirely.
+        TelemetryService telemetry = new TelemetryService(new SimpleMeterRegistry());
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(responseOf("I cannot help with that", 10, 5))   // Luna: rejected, real cost
+                .thenThrow(new RuntimeException("simulated upstream 503"));  // Terra: call itself fails
+        SmartRouteService router = proxiedRouter(telemetry, chatModel);
+
+        assertThrows(PartialRouteException.class,
+                () -> router.route("What is 6 times 7?", Validator.nonEmpty()));
+
+        assertEquals(1, telemetry.totalCalls());
+        assertEquals(Tier.LUNA.costUsd(10, 5), telemetry.totalCostUsd(), 1e-12);
     }
 }

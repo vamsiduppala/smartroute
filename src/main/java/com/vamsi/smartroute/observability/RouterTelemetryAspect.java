@@ -1,5 +1,6 @@
 package com.vamsi.smartroute.observability;
 
+import com.vamsi.smartroute.routing.PartialRouteException;
 import com.vamsi.smartroute.routing.RouteResult;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -27,11 +28,23 @@ public class RouterTelemetryAspect {
     @Around("execution(* com.vamsi.smartroute.routing.SmartRouteService.route*(..))")
     public Object aroundRoute(ProceedingJoinPoint pjp) throws Throwable {
         long start = System.nanoTime();
-        Object result = pjp.proceed();
-        long latencyMs = (System.nanoTime() - start) / 1_000_000;
-        if (result instanceof RouteResult r) {
-            telemetry.record(r.tierUsed(), r.costUsd(), latencyMs);
+        try {
+            Object result = pjp.proceed();
+            long latencyMs = (System.nanoTime() - start) / 1_000_000;
+            if (result instanceof RouteResult r) {
+                telemetry.record(r.tierUsed(), r.costUsd(), latencyMs);
+            }
+            return result;
+        } catch (PartialRouteException partial) {
+            // Earlier attempts before the failure may have incurred real cost -- record it
+            // (only if non-zero, so a first-attempt failure doesn't pollute telemetry with a
+            // zero-cost "call") before letting the failure propagate as before.
+            long latencyMs = (System.nanoTime() - start) / 1_000_000;
+            RouteResult r = partial.partialResult();
+            if (r.costUsd() > 0) {
+                telemetry.record(r.tierUsed(), r.costUsd(), latencyMs);
+            }
+            throw partial;
         }
-        return result;
     }
 }
