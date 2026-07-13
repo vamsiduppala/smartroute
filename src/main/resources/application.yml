@@ -11,14 +11,6 @@ spring:
           model: gpt-5.6-terra
           temperature: 0.2
 
-smartroute:
-  # Model ids + per-Mtok pricing (USD) as published at GPT-5.6 launch (2026-07-09).
-  # Verify against https://openai.com/products/release-notes/ before quoting in a post.
-  tiers:
-    luna:  { model: gpt-5.6-luna,  in: 1.0,  out: 6.0 }
-    terra: { model: gpt-5.6-terra, in: 2.5,  out: 15.0 }
-    sol:   { model: gpt-5.6-sol,   in: 5.0,  out: 30.0 }
-
 management:
   endpoint:
     health:
