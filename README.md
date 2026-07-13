@@ -45,13 +45,19 @@ flowchart LR
     R --> LG[SpendLedger: book spend]
 ```
 
-25 unit tests across the modules, all green (CI on every push). See `docs/*-NOTES.md` for per-module design.
+39 tests across the modules, all green (CI on every push) — 25 unit tests plus MockMvc web-layer tests for all 5 controllers. See `docs/*-NOTES.md` for per-module design.
+
+## API docs
+Swagger UI is at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is running — every endpoint below is documented and callable from there.
+
+## Deploying
+`Dockerfile` builds a multi-stage JRE image; `k8s/` has a Deployment (readiness/liveness wired to Actuator health groups) + Service + a `secret.example.yaml` template for `OPENAI_API_KEY`. Not deployed anywhere live — manifests are here for review, not a running cluster.
 
 ## Run it
 Prerequisites: **Java 21** and **Maven 3.9+**.
 ```bash
 export OPENAI_API_KEY=sk-...
-mvn spring-boot:run                                      # serves POST /route
+mvn spring-boot:run                                      # serves POST /route, Swagger UI at /swagger-ui.html
 curl -s localhost:8080/route -H 'content-type: application/json' \
      -d '{"prompt":"What is the capital of France?"}'    # → answered by Luna, fractions of a cent
 
