@@ -23,8 +23,9 @@
 
 ## Verification status (2026-07-12)
 - Compiles clean on Spring AI 1.0.0 GA + JDK 21.
-- 25 unit tests green across routing, governance, guardrails, observability, gateway, and the routing simulation.
+- 39 tests green: the original 25 unit tests plus a new MockMvc web-layer suite covering all 5 controllers (routing, gateway, governance, guardrails, observability).
 - Live GPT-5.6 eval blocked: owner's OpenAI account has no billing (`insufficient_quota`). Worked around with `RoutingSimulationTest` — a labeled projection on real published pricing (~54.6% saved), zero credits. Live measurement is optional future work, not a blocker.
+- Added OpenAPI/Swagger UI (springdoc) and Kubernetes manifests (Deployment/Service/Secret template), both API-free hardening. Booted the app on a scratch port to confirm Swagger UI, `/v3/api-docs`, and the Actuator liveness/readiness probe groups all actually work — not just "compiles."
 
 ## What to measure before posting (do NOT invent these)
 - Real routed vs. Sol-only $ on the task set (run `--eval`).
