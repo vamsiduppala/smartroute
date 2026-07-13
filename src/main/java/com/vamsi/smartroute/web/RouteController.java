@@ -22,6 +22,9 @@ public class RouteController {
     @Operation(summary = "Route a prompt", description = "Classifies the prompt to a starting tier, then escalates Luna -> Terra -> Sol until a validator accepts the answer.")
     @PostMapping("/route")
     public RouteResult route(@RequestBody RouteRequest request) {
+        if (request == null || request.prompt() == null || request.prompt().isBlank()) {
+            throw new IllegalArgumentException("prompt must not be blank");
+        }
         return router.route(request.prompt(), Validator.nonEmpty());
     }
 

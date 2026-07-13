@@ -61,6 +61,24 @@ class GuardrailsControllerTest {
     }
 
     @Test
+    void trustWithoutNameIsRejected() throws Exception {
+        mvc.perform(post("/guardrails/tools/trust")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"schema\":\"{}\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("name must not be blank"));
+    }
+
+    @Test
+    void checkWithoutNameIsRejected() throws Exception {
+        mvc.perform(post("/guardrails/tools/check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"schema\":\"{}\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("name must not be blank"));
+    }
+
+    @Test
     void checkDetectsDriftWhenSchemaChanges() throws Exception {
         mvc.perform(post("/guardrails/tools/trust")
                         .contentType(MediaType.APPLICATION_JSON)

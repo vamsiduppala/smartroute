@@ -28,6 +28,9 @@ public class GovernanceController {
     @Operation(summary = "Set a tenant's budget cap")
     @PutMapping("/budget/{tenant}")
     public Map<String, Object> setBudget(@PathVariable String tenant, @RequestParam double capUsd) {
+        if (capUsd < 0) {
+            throw new IllegalArgumentException("capUsd must not be negative");
+        }
         guard.setCap(tenant, capUsd);
         return Map.of("tenant", tenant, "capUsd", capUsd);
     }

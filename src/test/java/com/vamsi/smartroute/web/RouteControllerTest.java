@@ -41,6 +41,15 @@ class RouteControllerTest {
     }
 
     @Test
+    void blankPromptIsRejectedWithoutReachingTheRouter() throws Exception {
+        mvc.perform(post("/route")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"prompt\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("prompt must not be blank"));
+    }
+
+    @Test
     void surfacesEscalationInResponse() throws Exception {
         when(router.route(any(), any())).thenReturn(
                 new RouteResult("42", Tier.SOL, Tier.SOL, 3, 40, 20, 0.0009, true, "hard"));

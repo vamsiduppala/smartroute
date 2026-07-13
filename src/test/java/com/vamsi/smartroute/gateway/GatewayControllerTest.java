@@ -56,6 +56,15 @@ class GatewayControllerTest {
     }
 
     @Test
+    void blankPromptIsRejectedWithoutReachingTheGateway() throws Exception {
+        mvc.perform(post("/gateway/route")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tenant\":\"acme\",\"prompt\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("prompt must not be blank"));
+    }
+
+    @Test
     void missingTenantDefaultsToDefaultTenant() throws Exception {
         var route = new RouteResult("ok", Tier.LUNA, Tier.LUNA, 1, 1, 1, 0.0, true, "simple");
         when(gateway.handle(eq("default"), any())).thenReturn(GatewayResult.ok(route, BudgetGuard.Decision.ALLOW));

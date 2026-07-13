@@ -21,6 +21,10 @@ public class GatewayController {
     @Operation(summary = "Route through the full gateway", description = "Scans for prompt injection, checks the tenant's budget, routes across GPT-5.6 tiers, then books the actual spend.")
     @PostMapping("/gateway/route")
     public GatewayResult route(@RequestBody Map<String, String> body) {
-        return gateway.handle(body.getOrDefault("tenant", "default"), body.getOrDefault("prompt", ""));
+        String prompt = body.getOrDefault("prompt", "");
+        if (prompt.isBlank()) {
+            throw new IllegalArgumentException("prompt must not be blank");
+        }
+        return gateway.handle(body.getOrDefault("tenant", "default"), prompt);
     }
 }

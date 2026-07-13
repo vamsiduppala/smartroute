@@ -28,14 +28,24 @@ public class GuardrailsController {
     @Operation(summary = "Trust a tool's current schema", description = "Fingerprints and records the schema as the trusted baseline for this tool name.")
     @PostMapping("/tools/trust")
     public Map<String, String> trust(@RequestBody Map<String, String> body) {
-        String fp = drift.trust(body.get("name"), body.getOrDefault("schema", ""));
-        return Map.of("name", body.get("name"), "fingerprint", fp);
+        String name = requireName(body);
+        String fp = drift.trust(name, body.getOrDefault("schema", ""));
+        return Map.of("name", name, "fingerprint", fp);
     }
 
     @Operation(summary = "Check a tool's schema for drift", description = "True if the schema no longer matches the trusted fingerprint (a 'rug pull').")
     @PostMapping("/tools/check")
     public Map<String, Object> check(@RequestBody Map<String, String> body) {
-        boolean drifted = drift.hasDrifted(body.get("name"), body.getOrDefault("schema", ""));
-        return Map.of("name", body.get("name"), "drifted", drifted);
+        String name = requireName(body);
+        boolean drifted = drift.hasDrifted(name, body.getOrDefault("schema", ""));
+        return Map.of("name", name, "drifted", drifted);
+    }
+
+    private static String requireName(Map<String, String> body) {
+        String name = body.get("name");
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
+        return name;
     }
 }

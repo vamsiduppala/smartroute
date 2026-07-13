@@ -50,6 +50,13 @@ class GovernanceControllerTest {
     }
 
     @Test
+    void negativeCapIsRejected() throws Exception {
+        mvc.perform(put("/governance/budget/tenant-negativecap").param("capUsd", "-5"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("capUsd must not be negative"));
+    }
+
+    @Test
     void spendEndpointReflectsLedgerBooking() throws Exception {
         ledger.add("tenant-spend", 3.25);
 
