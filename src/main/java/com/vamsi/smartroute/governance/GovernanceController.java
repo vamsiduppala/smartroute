@@ -4,8 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/governance")
 @Tag(name = "governance", description = "Per-tenant spend caps, enforced before tokens are spent")
@@ -21,17 +19,21 @@ public class GovernanceController {
 
     @Operation(summary = "Get a tenant's spend and cap")
     @GetMapping("/spend/{tenant}")
-    public Map<String, Object> spend(@PathVariable String tenant) {
-        return Map.of("tenant", tenant, "spentUsd", ledger.spent(tenant), "capUsd", guard.capFor(tenant));
+    public SpendResponse spend(@PathVariable String tenant) {
+        return new SpendResponse(tenant, ledger.spent(tenant), guard.capFor(tenant));
     }
 
     @Operation(summary = "Set a tenant's budget cap")
     @PutMapping("/budget/{tenant}")
-    public Map<String, Object> setBudget(@PathVariable String tenant, @RequestParam double capUsd) {
+    public BudgetResponse setBudget(@PathVariable String tenant, @RequestParam double capUsd) {
         if (capUsd < 0) {
             throw new IllegalArgumentException("capUsd must not be negative");
         }
         guard.setCap(tenant, capUsd);
-        return Map.of("tenant", tenant, "capUsd", capUsd);
+        return new BudgetResponse(tenant, capUsd);
     }
+
+    public record SpendResponse(String tenant, double spentUsd, double capUsd) {}
+
+    public record BudgetResponse(String tenant, double capUsd) {}
 }
