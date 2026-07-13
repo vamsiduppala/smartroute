@@ -1,9 +1,9 @@
 package com.vamsi.smartroute.routing;
 
 import com.vamsi.smartroute.model.Tier;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 
@@ -19,10 +19,10 @@ import java.util.List;
 @Service
 public class SmartRouteService {
 
-    private final OpenAiChatModel chatModel;
+    private final ChatModel chatModel;
     private final ComplexityClassifier classifier;
 
-    public SmartRouteService(OpenAiChatModel chatModel, ComplexityClassifier classifier) {
+    public SmartRouteService(ChatModel chatModel, ComplexityClassifier classifier) {
         this.chatModel = chatModel;
         this.classifier = classifier;
     }

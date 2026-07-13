@@ -5,9 +5,9 @@ import com.vamsi.smartroute.model.Tier;
 import com.vamsi.smartroute.routing.RouteResult;
 import com.vamsi.smartroute.routing.SmartRouteService;
 import com.vamsi.smartroute.routing.Validator;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -40,10 +40,10 @@ public class EvalRunner implements ApplicationRunner {
     private static final Path RESULTS_PATH = Path.of("eval/results.md");
 
     private final SmartRouteService router;
-    private final OpenAiChatModel chatModel;
+    private final ChatModel chatModel;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public EvalRunner(SmartRouteService router, OpenAiChatModel chatModel) {
+    public EvalRunner(SmartRouteService router, ChatModel chatModel) {
         this.router = router;
         this.chatModel = chatModel;
     }

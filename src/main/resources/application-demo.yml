@@ -1,0 +1,8 @@
+# Activated with the `demo` Spring profile:  ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
+# Lets the whole app boot and serve requests with NO OpenAI key — DemoConfig swaps in a canned
+# ChatModel (see com.vamsi.smartroute.demo). The base application.yml requires ${OPENAI_API_KEY};
+# this override supplies a placeholder so startup never depends on the env var in demo mode.
+spring:
+  ai:
+    openai:
+      api-key: demo-mode-no-key-required
