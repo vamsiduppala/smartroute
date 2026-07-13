@@ -64,4 +64,16 @@ class GovernanceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.spentUsd").value(3.25));
     }
+
+    @Test
+    void nonNumericCapIsRejectedAsBadRequestNotServerError() throws Exception {
+        mvc.perform(put("/governance/budget/tenant-badcap").param("capUsd", "not-a-number"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void missingCapParamIsRejectedAsBadRequestNotServerError() throws Exception {
+        mvc.perform(put("/governance/budget/tenant-nocap"))
+                .andExpect(status().isBadRequest());
+    }
 }

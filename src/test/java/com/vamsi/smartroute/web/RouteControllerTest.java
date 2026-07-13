@@ -50,6 +50,14 @@ class RouteControllerTest {
     }
 
     @Test
+    void malformedJsonBodyIsRejectedAsBadRequest() throws Exception {
+        mvc.perform(post("/route")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{not valid json"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void surfacesEscalationInResponse() throws Exception {
         when(router.route(any(), any())).thenReturn(
                 new RouteResult("42", Tier.SOL, Tier.SOL, 3, 40, 20, 0.0009, true, "hard"));
