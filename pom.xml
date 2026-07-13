@@ -25,6 +25,13 @@
              above (3.4.1 to latest 3.4.x, not 4.x) and springdoc below (2.8.3 to latest 2.8.x,
              not 3.x). -->
         <spring-ai.version>1.0.9</spring-ai.version>
+        <!-- Spring Boot 3.4.13's BOM manages jackson-bom at 2.18.5, which is affected by
+             CVE-2026-54515 (case-insensitive deserialization can bypass per-property
+             @JsonIgnoreProperties). Not currently exploitable here: this codebase uses
+             neither @JsonIgnoreProperties nor @JsonFormat(ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+             anywhere, but overriding to the patched version regardless (defense in depth,
+             and to keep a known-CVE version out of a public repo). -->
+        <jackson-bom.version>2.18.9</jackson-bom.version>
     </properties>
 
     <dependencyManagement>
