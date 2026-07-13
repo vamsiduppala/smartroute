@@ -15,5 +15,5 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Build & test
-        run: mvn -B test
+      - name: Build, test, and package
+        run: mvn -B package
