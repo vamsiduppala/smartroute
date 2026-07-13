@@ -15,15 +15,24 @@ import java.util.regex.Pattern;
 public class ComplexityClassifier {
 
     private static final Pattern HARD_SIGNALS = Pattern.compile(
-            // "concurren\\w*" (not the bare "concurren"): a trailing \b requires "concurren"
-            // itself to be a complete word, and it never is in real text -- always
-            // "concurrent"/"concurrency"/"concurrently". Without \w*, this branch could never
-            // fire on any real sentence, silently dropping an entire hard-signal category
-            // (found via independent review; regression test:
-            // ComplexityClassifierTest.concurrencyRelatedPromptsRegisterAsAHardSignal).
-            "\\b(prove|derive|optimi[sz]e|refactor|concurren\\w*|race condition|"
-          + "algorithm|complexity|regex|recursion|multi-step|step by step|"
-          + "architect|design a|trade-?off)\\b",
+            // Stems carry inflection tolerance so common real-world phrasings actually fire.
+            // Two lessons baked in here, both found by evidence not guesswork:
+            //   * "concurren\\w*" (not bare "concurren"): a trailing \b requires "concurren" to
+            //     be a complete word, and it never is -- always "concurrent"/"concurrency"/etc.
+            //     Without \w* this branch could fire on nothing (independent-review finding;
+            //     regression: ComplexityClassifierTest.concurrencyRelatedPromptsRegisterAsAHardSignal).
+            //   * The calibration corpus (docs/classifier-calibration.md) showed the bare stems
+            //     "derive"/"architect"/"refactor"/"optimi[sz]e"/"trade-off" silently missing the
+            //     everyday inflections "deriving"/"derivation", "architecture", "refactoring",
+            //     "optimizing"/"optimization", and plural "trade-offs" -- so a proof or
+            //     architecture task read as trivial and started at Luna. Each stem below is
+            //     widened only as far as stays false-positive-safe: the leading \b still blocks
+            //     substring hits like "improve"/"approve" containing "prov", and the stems
+            //     (deriv/refactor/architect/recursi/complexit/algorithm) are specific enough that
+            //     \w* admits only genuine inflections, never an unrelated word.
+            "\\b(prov(e|es|ed|ing|en)|proof|deriv(e|es|ed|ing|ation)|optimi[sz](e|es|ed|ing|ation)|"
+          + "refactor\\w*|concurren\\w*|race condition|algorithm\\w*|complexit\\w*|regex|"
+          + "recursi\\w*|multi-step|step by step|architect\\w*|design a|trade-?offs?)\\b",
             Pattern.CASE_INSENSITIVE);
 
     private static final Pattern CODE_FENCE = Pattern.compile("```|\\bclass \\w+|\\bpublic static\\b");

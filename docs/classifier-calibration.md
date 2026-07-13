@@ -28,7 +28,7 @@ Cases: 18  ·  **exact: 10 (56%)**  ·  undershoot: 8  ·  overshoot: 0
 | c12 | SOL | TERRA | under ↓ | concurrency + refactor, multiple hard signals |
 | c13 | SOL | SOL | exact | optimize + prove + complexity + code fence |
 | c14 | SOL | TERRA | under ↓ | architecture + concurrency + multi-step design |
-| c15 | SOL | LUNA | under ↓ | formal proof + derivation |
+| c15 | SOL | TERRA | under ↓ | formal proof + derivation |
 | c16 | SOL | TERRA | under ↓ | recursion + derive + complexity |
 | c17 | LUNA | LUNA | exact | short creative, no hard signals |
 | c18 | SOL | TERRA | under ↓ | refactor + design + code keywords |

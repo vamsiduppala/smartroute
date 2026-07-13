@@ -49,6 +49,32 @@ class ComplexityClassifierTest {
     }
 
     @Test
+    void inflectedHardSignalsRegister() {
+        // Calibration finding (docs/classifier-calibration.md): the bare stems missed everyday
+        // inflected phrasings, so proof/architecture/refactor tasks read as trivial. Each of these
+        // must now register at least one hard signal.
+        for (String prompt : new String[]{
+                "Prove this by deriving each step of the derivation.",   // proving/deriving/derivation
+                "Design the architecture and its architectural layers.", // architecture/architectural
+                "Refactoring this while optimizing the hot path.",       // refactoring/optimizing
+                "Weigh the trade-offs of this optimization.",            // trade-offs (plural)/optimization
+                "Analyze the recursion and the algorithms involved."     // recursion/algorithms
+        }) {
+            assertTrue(classifier.classify(prompt).score() >= 1,
+                    "expected a hard signal to fire on: " + prompt);
+        }
+    }
+
+    @Test
+    void inflectionToleranceDoesNotFalsePositiveOnUnrelatedWords() {
+        // The widened stems must not swallow common words that merely CONTAIN a stem: "improve",
+        // "approve", "provide" all contain "prov" but are not proofs; the leading \b blocks them.
+        var c = classifier.classify("Please improve and approve this; it will provide value to users.");
+        assertEquals(0, c.score(), "no hard signal should fire; got score " + c.score());
+        assertEquals(Tier.LUNA, c.startTier());
+    }
+
+    @Test
     void concurrencyRelatedPromptsRegisterAsAHardSignal() {
         // Regression coverage (independent review finding): the HARD_SIGNALS pattern has
         // "concurren" wrapped in \b...\b -- but that requires "concurren" itself to be a
