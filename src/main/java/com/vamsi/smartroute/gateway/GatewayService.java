@@ -75,6 +75,16 @@ public class GatewayService {
             // reservation permanently overstates (or understates) this tenant's real spend.
             ledger.add(tenant, partial.partialResult().costUsd() - estimate);
             throw partial;
+        } catch (RuntimeException unexpected) {
+            // Any OTHER failure out of routing (a validator or classifier that throws, or any
+            // unchecked error the router's own try/catch doesn't wrap into PartialRouteException)
+            // yields no RouteResult and no partial-cost snapshot -- nothing to reconcile against.
+            // Fully REVERSE the up-front reservation before propagating: leaving it booked would
+            // leak phantom spend that counts toward the tenant's cap and could eventually lock
+            // them out of their own budget. The reservation must always be reconciled or reversed
+            // (see BudgetGuard.evaluateAndReserve) -- this closes the last path that didn't.
+            ledger.add(tenant, -estimate);
+            throw unexpected;
         }
         ledger.add(tenant, result.costUsd() - estimate);   // true up: reservation -> actual cost
         return GatewayResult.ok(result, decision);

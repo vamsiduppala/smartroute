@@ -80,6 +80,22 @@ class GatewayServiceTest {
     }
 
     @Test
+    void unexpectedRoutingFailureReversesTheReservationInsteadOfLeakingIt() {
+        // A non-PartialRouteException escaping the router (a validator/classifier that throws, or
+        // any unchecked error the router doesn't wrap) must NOT leave the up-front reservation
+        // booked. A leaked reservation is phantom spend that counts toward the cap and could
+        // eventually REJECT the tenant's own legitimate requests -- a self-inflicted lockout.
+        SpendLedger ledger = new SpendLedger();
+        when(router.route(any(), any())).thenThrow(new IllegalStateException("boom"));
+        GatewayService g = gatewayWith(ledger, 10.0);
+
+        assertThrows(IllegalStateException.class,
+                () -> g.handle("acme", "What is the capital of France?"));
+
+        assertEquals(0.0, ledger.spent("acme"), 1e-9);   // reservation reversed -> no phantom spend left behind
+    }
+
+    @Test
     void partialRouteFailureStillBooksWhateverCostWasIncurredBeforePropagating() {
         // Before this fix, a PartialRouteException from the router would propagate straight
         // out of handle() and the ledger.add(...) line would never run -- any real cost from
