@@ -5,3 +5,4 @@ target/
 .vscode/
 .env
 eval/results.md
+k8s/secret.yaml
