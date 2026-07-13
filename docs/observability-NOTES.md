@@ -7,4 +7,6 @@
 **Why an aspect:** telemetry stays cross-cutting — cost/latency are captured no matter which module (rag, memory, governance) originated the model call, without each module wiring its own metrics.
 
 **Deps added:** `spring-boot-starter-actuator` (Micrometer) + `spring-boot-starter-aop`.
-**Tests:** aggregation of calls + cost across tiers, empty-start — using an in-memory `SimpleMeterRegistry`, no live calls.
+**Tests:** aggregation of calls + cost across tiers, empty-start — using an in-memory `SimpleMeterRegistry`, no live calls. `RouterTelemetryAspectTest` separately verifies the `@Around` advice itself actually fires, via a real `AspectJProxyFactory` proxy — not just that `TelemetryService` works as a POJO.
+
+**Gotcha (resolved 2026-07-12):** the pointcut was `execution(* ...SmartRouteService.route(..))` — name-exact, so it silently missed `routeFrom(..)` once that method existed (added for the governance DOWNGRADE fix, see `gateway-NOTES.md`). Any DOWNGRADE-routed request vanished from telemetry with no error. Fixed by widening to `route*(..)`; caught by `RouterTelemetryAspectTest`, which fails without the fix.
