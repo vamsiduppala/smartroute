@@ -30,7 +30,7 @@ SmartRoute is growing into an **AI Gateway** — a Spring Boot control plane in 
 | **governance** | `GET/PUT /governance/*` | GPT-5.6 tier pricing | ✅ tested |
 | **guardrails** | `POST /guardrails/*` | AI SDK 7 tool-drift defense (2026-07-09), Java port | ✅ tested |
 | **observability** | `GET /observability/metrics` | AI SDK 7 telemetry redesign (2026-07-09) | ✅ tested |
-| rag / memory / longcontext | — | Anthropic web-search / agent-memory / Sonnet 5 1M | ⏳ designed (needs Anthropic key) |
+| rag / memory / longcontext | — | Anthropic web-search / agent-memory / Sonnet 5 1M | ⏸ deferred — no Anthropic API credits available; RAG/long-context inherently need a live model call, so there's nothing honest to build API-free here |
 
 ```mermaid
 flowchart LR

@@ -27,6 +27,9 @@
 - Live GPT-5.6 eval blocked: owner's OpenAI account has no billing (`insufficient_quota`). Worked around with `RoutingSimulationTest` — a labeled projection on real published pricing (~54.6% saved), zero credits. Live measurement is optional future work, not a blocker.
 - Added OpenAPI/Swagger UI (springdoc) and Kubernetes manifests (Deployment/Service/Secret template), both API-free hardening. Booted the app on a scratch port to confirm Swagger UI, `/v3/api-docs`, and the Actuator liveness/readiness probe groups all actually work — not just "compiles."
 
+## Deferred (2026-07-12)
+- **rag / memory / longcontext modules** — permanently on hold: owner's Anthropic account has no API credits, and unlike the GPT-5.6 routing simulation, RAG and long-context genuinely require a live model call to be real (retrieval quality, actual 1M-context behavior) — a stub client would just be hollow scaffolding. Not worth building until credits exist. Everything else on this project stays API-free and keeps moving.
+
 ## What to measure before posting (do NOT invent these)
 - Real routed vs. Sol-only $ on the task set (run `--eval`).
 - How often the classifier's start tier was right (attempts == 1).
