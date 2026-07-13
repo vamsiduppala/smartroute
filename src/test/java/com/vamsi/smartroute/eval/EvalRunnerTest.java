@@ -7,7 +7,7 @@ import com.vamsi.smartroute.routing.SmartRouteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -28,6 +28,18 @@ import static org.mockito.Mockito.*;
 class EvalRunnerTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * Build a real ChatResponse rather than mocking its final accessors — mirrors
+     * SmartRouteServiceTest.responseOf and stays robust if the inline mock-maker is dropped.
+     */
+    private static ChatResponse responseOf(String answer, int promptTokens, int completionTokens) {
+        AssistantMessage message = new AssistantMessage(answer);
+        Generation generation = new Generation(message);
+        DefaultUsage usage = new DefaultUsage(promptTokens, completionTokens);
+        ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
+        return new ChatResponse(List.of(generation), metadata);
+    }
 
     @Test
     void parsesWellFormedTasksAndSkipsBlankLines() {
@@ -97,21 +109,10 @@ class EvalRunnerTest {
         OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
         SmartRouteService router = mock(SmartRouteService.class);
 
-        // Baseline (Sol) answers "paris" with a small token usage for every call.
-        // doReturn(..) avoids coupling the test to Spring AI's Integer-vs-Long token getters.
-        Usage usage = mock(Usage.class);
-        doReturn(100).when(usage).getPromptTokens();
-        doReturn(50).when(usage).getCompletionTokens();
-        ChatResponseMetadata meta = mock(ChatResponseMetadata.class);
-        when(meta.getUsage()).thenReturn(usage);
-        AssistantMessage message = mock(AssistantMessage.class);
-        when(message.getText()).thenReturn("Paris");
-        Generation generation = mock(Generation.class);
-        when(generation.getOutput()).thenReturn(message);
-        ChatResponse response = mock(ChatResponse.class);
-        when(response.getResult()).thenReturn(generation);
-        when(response.getMetadata()).thenReturn(meta);
-        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        // Baseline (Sol) answers "Paris" with a small token usage for every call. Build the real
+        // response object (final accessors can't be stubbed without the inline mock-maker, which
+        // BUILD_NOTES flags as deprecated on future JDKs) — same pattern as SmartRouteServiceTest.
+        when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("Paris", 100, 50));
 
         // Routing succeeds for the good task and throws for the bad one.
         RouteResult routed = new RouteResult("Paris", Tier.LUNA, Tier.LUNA, 1, 100, 50, 0.0004, true, "simple");
