@@ -1,5 +1,7 @@
 # SmartRoute — a GPT-5.6 tier router on Spring AI
 
+[![CI](https://github.com/vamsiduppala/smartroute/actions/workflows/ci.yml/badge.svg)](https://github.com/vamsiduppala/smartroute/actions/workflows/ci.yml)
+
 **Rides:** OpenAI **GPT-5.6** (Sol / Terra / Luna), launched **2026-07-09** → [launch coverage](https://techcrunch.com/2026/07/09/openai-launches-its-new-family-of-models-with-gpt-5-6/) · [OpenAI release notes](https://openai.com/products/release-notes/)
 
 GPT-5.6 shipped as three tiers with a 5× price spread (Luna $1/$6 → Sol $5/$30 per Mtok). Reaching for Sol on every call is the expensive default. **SmartRoute classifies each request and sends it to the cheapest tier that still passes a check, escalating only on failure** — built with **Spring AI** so it drops into a Java/Spring stack.
