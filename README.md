@@ -59,9 +59,13 @@ Swagger UI is at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is
 Prerequisites: **Java 21** and **Maven 3.9+**.
 ```bash
 export OPENAI_API_KEY=sk-...
-mvn spring-boot:run                                      # serves POST /route, Swagger UI at /swagger-ui.html
+mvn spring-boot:run                                      # Swagger UI at /swagger-ui.html
+
 curl -s localhost:8080/route -H 'content-type: application/json' \
-     -d '{"prompt":"What is the capital of France?"}'    # → answered by Luna, fractions of a cent
+     -d '{"prompt":"What is the capital of France?"}'    # bare router → answered by Luna, fractions of a cent
+
+curl -s localhost:8080/gateway/route -H 'content-type: application/json' \
+     -d '{"tenant":"acme","prompt":"What is the capital of France?"}'   # full gateway: guardrails + budget + routing + spend booking
 
 mvn spring-boot:run "-Dspring-boot.run.arguments=--eval --spring.main.web-application-type=none"  # benchmark → eval/results.md
 ```
