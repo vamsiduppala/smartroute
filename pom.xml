@@ -32,6 +32,12 @@
              anywhere, but overriding to the patched version regardless (defense in depth,
              and to keep a known-CVE version out of a public repo). -->
         <jackson-bom.version>2.18.9</jackson-bom.version>
+        <!-- Same reasoning: Spring Boot 3.4.13's BOM manages Tomcat at 10.1.50, which is
+             missing fixes present in 10.1.57 (latest 10.1.x patch), including CVE-2026-55956
+             (Moderate: security constraints on the default servlet can be ignored). Not
+             exploitable here: this app has no web.xml, no Spring Security, no servlet-level
+             security constraints configured anywhere. Patched regardless. -->
+        <tomcat.version>10.1.57</tomcat.version>
     </properties>
 
     <dependencyManagement>
