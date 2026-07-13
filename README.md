@@ -56,10 +56,10 @@ Swagger UI is at `/swagger-ui.html` (raw spec at `/v3/api-docs`) once the app is
 `Dockerfile` builds a multi-stage JRE image; `k8s/` has a Deployment (readiness/liveness wired to Actuator health groups) + Service + a `secret.example.yaml` template for `OPENAI_API_KEY`. Not deployed anywhere live — manifests are here for review, not a running cluster.
 
 ## Run it
-Prerequisites: **Java 21** and **Maven 3.9+**.
+Prerequisites: **Java 21**. Maven itself isn't required — `./mvnw` (or `mvnw.cmd` on Windows) bootstraps the pinned Maven version automatically.
 ```bash
 export OPENAI_API_KEY=sk-...
-mvn spring-boot:run                                      # Swagger UI at /swagger-ui.html
+./mvnw spring-boot:run                                   # Swagger UI at /swagger-ui.html
 
 curl -s localhost:8080/route -H 'content-type: application/json' \
      -d '{"prompt":"What is the capital of France?"}'    # bare router → answered by Luna, fractions of a cent
@@ -67,7 +67,7 @@ curl -s localhost:8080/route -H 'content-type: application/json' \
 curl -s localhost:8080/gateway/route -H 'content-type: application/json' \
      -d '{"tenant":"acme","prompt":"What is the capital of France?"}'   # full gateway: guardrails + budget + routing + spend booking
 
-mvn spring-boot:run "-Dspring-boot.run.arguments=--eval --spring.main.web-application-type=none"  # benchmark → eval/results.md
+./mvnw spring-boot:run "-Dspring-boot.run.arguments=--eval --spring.main.web-application-type=none"  # benchmark → eval/results.md
 ```
 (The benchmark needs an OpenAI key **with billing enabled** — a key without quota returns HTTP 429 `insufficient_quota`.)
 

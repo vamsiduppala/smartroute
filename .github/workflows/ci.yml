@@ -16,4 +16,4 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Build, test, and package
-        run: mvn -B package
+        run: ./mvnw -B package
