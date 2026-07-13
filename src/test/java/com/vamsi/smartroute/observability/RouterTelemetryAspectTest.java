@@ -92,4 +92,29 @@ class RouterTelemetryAspectTest {
         assertEquals(1, telemetry.totalCalls());
         assertEquals(Tier.LUNA.costUsd(10, 5), telemetry.totalCostUsd(), 1e-12);
     }
+
+    @Test
+    void multiAttemptEscalationRecordsOneTelemetryEntryPerRealModelCall() {
+        // The actual granularity fix: before, the aspect wrapped the WHOLE escalation as one
+        // join point, so 3 real model calls (Luna, Terra, Sol) got recorded as a single
+        // telemetry entry attributed entirely to Sol -- undercounting real API call volume and
+        // misattributing Luna/Terra's cost. Now each AttemptRecord in the result gets its own
+        // telemetry.record(...) call.
+        TelemetryService telemetry = new TelemetryService(new SimpleMeterRegistry());
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(responseOf("I cannot help with that", 10, 5))    // Luna: rejected
+                .thenReturn(responseOf("I cannot help with that", 12, 6))    // Terra: rejected
+                .thenReturn(responseOf("42", 14, 7));                        // Sol: accepted
+        SmartRouteService router = proxiedRouter(telemetry, chatModel);
+
+        router.route("What is 6 times 7?", Validator.nonEmpty());
+
+        assertEquals(3, telemetry.totalCalls());   // one per real attempt, not one for the whole request
+        assertEquals(1L, telemetry.callsByTier().get("LUNA"));
+        assertEquals(1L, telemetry.callsByTier().get("TERRA"));
+        assertEquals(1L, telemetry.callsByTier().get("SOL"));
+        double expectedTotal = Tier.LUNA.costUsd(10, 5) + Tier.TERRA.costUsd(12, 6) + Tier.SOL.costUsd(14, 7);
+        assertEquals(expectedTotal, telemetry.totalCostUsd(), 1e-12);
+    }
 }
