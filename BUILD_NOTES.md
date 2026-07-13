@@ -1,5 +1,50 @@
 # BUILD_NOTES — SmartRoute (raw material for the post)
 
+## HANDOFF — pick up here (written 2026-07-13T07:25:48Z, end of a Sonnet 5 hardening session)
+Next session runs on Opus 4.8, cold start. Repo is fully committed and pushed (`origin/main` ==
+local HEAD), 76 tests green, CI green. Cadence rule in effect: 1 hour of active-work-only,
+back-to-back chunks, no questions, deferred list for blockers, pushing pre-authorized — then a
+genuine 5-hour break before the next hour block. This session's hour ended at 2026-07-13T07:25:48Z;
+next block should start ~2026-07-13T12:25:48Z.
+
+**State:** all 3 previously-deferred "known limitations" from earlier today are now fixed
+(mid-escalation cost loss, TOCTOU budget race, telemetry granularity — see "Known limitations"
+section below, all struck through). Three independent-review passes this session found 8+ real
+bugs, all fixed and verified (revert-confirm-restore rigor on each). Dependency CVEs researched
+and patched where real (Jackson, Tomcat, Spring Framework — see Verification status 2026-07-13).
+Maven wrapper added with a verified checksum. No secrets anywhere in git history.
+
+**Priority order for the next block:**
+1. **Run another independent-review pass** (see feedback memory for the exact pattern: spawn a
+   subagent with no context beyond "read these actual files, look for X", verify its claims
+   independently, rigor-check any fix). This found real bugs 3 times running this session —
+   don't assume the well is dry. Areas not yet given this treatment: `Tier`, `ComplexityClassifier`
+   in isolation, the `k8s/`/`Dockerfile` content itself (only linted, never deeply reviewed),
+   `application.yml` property binding correctness.
+2. **Recheck Docker daemon / k8s cluster availability** — both deferred purely on environment
+   grounds (no daemon, no cluster), not code issues. A quick `docker info` / `kubectl cluster-info`
+   costs nothing; if either is available now, there's real verification work waiting
+   (`docker build`, a smoke-test container run, `kubectl apply --dry-run` or an actual `kind`
+   cluster) that was impossible in this session's sandbox.
+3. **Mockito self-attach warning** (see "Minor known item" below) — still just a future-JDK
+   compatibility warning, not a current failure, but if there's a full hour with nothing more
+   urgent, wiring the `-javaagent` properly via `maven-dependency-plugin` is a legitimate,
+   bounded task.
+4. **EvalRunner robustness** — currently one exception anywhere in the task loop kills the whole
+   benchmark run with no partial results written. Lower priority (it's a one-shot manual CLI
+   tool, not a production path — see the "Deferred" reasoning already in this file), but worth
+   a look if other priorities are clear.
+5. **The actual blog post** — `BUILD_NOTES.md`'s "Post angle" section (bottom of this file) is
+   still an unpublished draft seed. Everything it needs (the per-attempt-cost gotcha, the parity
+   caveat, real simulation numbers) has been ready for a while. This is a genuinely different
+   kind of task (writing, not code) — flag it to the user rather than assuming it's in scope for
+   an autonomous hardening loop.
+
+**Do NOT re-attempt:** rag/memory/longcontext modules (permanently deferred, no Anthropic
+credits — don't build these, don't ask about a key). Do NOT relitigate the DOWNGRADE
+soft-ceiling or no-auth items in "Known limitations" below — both are deliberate, already-argued
+design decisions, not bugs.
+
 **Launch ridden:** GPT-5.6 (Sol/Terra/Luna), 2026-07-09. Ship target: within days of launch.
 
 ## What's actually new about GPT-5.6
