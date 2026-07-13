@@ -7,8 +7,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 /**
- * Times every {@code SmartRouteService.route(..)} call and records the outcome to telemetry —
- * cross-cutting, so cost/latency are captured no matter which module (rag/memory/governance) drove the call.
+ * Times every {@code SmartRouteService.route(..)}/{@code routeFrom(..)} call and records the
+ * outcome to telemetry — cross-cutting, so cost/latency are captured no matter which module
+ * (rag/memory/governance) drove the call, or whether it went through the classifier-driven
+ * {@code route} or the forced-tier {@code routeFrom} (e.g. a BudgetGuard DOWNGRADE).
  */
 @Aspect
 @Component
@@ -20,7 +22,9 @@ public class RouterTelemetryAspect {
         this.telemetry = telemetry;
     }
 
-    @Around("execution(* com.vamsi.smartroute.routing.SmartRouteService.route(..))")
+    // "route*" -- NOT just "route" -- so this also catches routeFrom(..). A name-exact pointcut
+    // here previously missed routeFrom entirely, silently dropping telemetry for DOWNGRADE calls.
+    @Around("execution(* com.vamsi.smartroute.routing.SmartRouteService.route*(..))")
     public Object aroundRoute(ProceedingJoinPoint pjp) throws Throwable {
         long start = System.nanoTime();
         Object result = pjp.proceed();
