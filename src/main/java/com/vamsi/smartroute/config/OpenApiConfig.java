@@ -1,5 +1,6 @@
 package com.vamsi.smartroute.config;
 
+import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
@@ -10,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 /** Swagger UI at /swagger-ui.html, raw spec at /v3/api-docs. */
 @Configuration
 public class OpenApiConfig {
+
+    private static final String REPO_URL = "https://github.com/vamsiduppala/smartroute";
 
     @Bean
     public OpenAPI smartRouteOpenApi() {
@@ -22,7 +25,10 @@ public class OpenApiConfig {
                                 (prompt-injection scanning, tool-drift detection), governance (per-tenant \
                                 budget caps), and observability (cost + latency telemetry).""")
                         .version("0.1.0")
-                        .contact(new Contact().name("Vamsi Duppala"))
-                        .license(new License().name("MIT")));
+                        .contact(new Contact().name("Vamsi Duppala").url(REPO_URL))
+                        .license(new License().name("MIT").url("https://opensource.org/licenses/MIT")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Source, architecture notes, and engineering write-ups on GitHub")
+                        .url(REPO_URL));
     }
 }
