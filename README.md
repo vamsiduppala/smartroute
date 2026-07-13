@@ -94,6 +94,10 @@ The `demo` profile swaps in a canned `ChatModel`, so the **entire routing + gate
 offline** — guardrails, budget checks, tier selection, cost accounting, and telemetry all execute
 for real; only the model call is stubbed.
 
+Prefer a live URL over a local clone? Because the demo needs no secrets, you can stand up your own copy in one click — Render reads [`render.yaml`](render.yaml) and boots the keyless demo:
+
+[![Deploy to Render](https://img.shields.io/badge/Deploy%20to-Render-46E3B7?logo=render&logoColor=white)](https://render.com/deploy?repo=https://github.com/vamsiduppala/smartroute)
+
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo        # no OPENAI_API_KEY needed
 
