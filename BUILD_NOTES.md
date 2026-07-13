@@ -29,6 +29,7 @@
 
 ## Deferred (2026-07-12)
 - **rag / memory / longcontext modules** — permanently on hold: owner's Anthropic account has no API credits, and unlike the GPT-5.6 routing simulation, RAG and long-context genuinely require a live model call to be real (retrieval quality, actual 1M-context behavior) — a stub client would just be hollow scaffolding. Not worth building until credits exist. Everything else on this project stays API-free and keeps moving.
+- **Docker image build verification** — Docker CLI is installed but the daemon isn't running (Docker Desktop isn't even started) in this environment; booting it here is slow/uncertain. `Dockerfile` has never actually been built and run, just read for correctness. Revisit when Docker Desktop is up: `docker build -t smartroute:0.1.0 .` then a smoke-test container run.
 
 ## What to measure before posting (do NOT invent these)
 - Real routed vs. Sol-only $ on the task set (run `--eval`).
