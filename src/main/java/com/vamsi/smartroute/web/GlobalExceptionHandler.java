@@ -1,5 +1,6 @@
 package com.vamsi.smartroute.web;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -44,7 +45,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, String>> methodNotAllowed(HttpRequestMethodNotSupportedException e) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of("error", "method not allowed"));
+        // RFC 7231: a 405 response should list the methods that ARE supported. Spring's own
+        // default handling reads this off the exception; a hand-built ResponseEntity has to do
+        // the same explicitly, or the Allow header silently goes missing.
+        var builder = ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED);
+        var supported = e.getSupportedHttpMethods();
+        if (supported != null) {
+            builder.allow(supported.toArray(new HttpMethod[0]));
+        }
+        return builder.body(Map.of("error", "method not allowed"));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
