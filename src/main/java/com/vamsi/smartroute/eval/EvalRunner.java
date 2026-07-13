@@ -69,6 +69,27 @@ public class EvalRunner implements ApplicationRunner {
             return;
         }
 
+        EvalReport report = runBenchmark(tasks);
+
+        Files.writeString(RESULTS_PATH, report.markdown());
+        System.out.println(report.markdown());
+        if (report.errored() > 0) {
+            System.err.println("[eval] completed with " + report.errored() + "/" + report.tasks()
+                    + " task(s) errored — partial results written to " + RESULTS_PATH + ".");
+        }
+        System.exit(report.errored() == 0 ? 0 : 1); // one-shot benchmark: terminate instead of leaving the web server up
+    }
+
+    /** The generated report plus the counts run() needs for its exit code / log line. */
+    record EvalReport(String markdown, int tasks, int errored) {}
+
+    /**
+     * Runs the baseline-vs-routed comparison over the task set and produces the markdown report.
+     * Kept free of file I/O and {@code System.exit} so it is unit-testable: a task that throws
+     * (a transient API error, a bad task) is recorded as an error row and the loop continues, so
+     * a partial run still yields a report rather than losing everything. Package-private for tests.
+     */
+    EvalReport runBenchmark(List<Task> tasks) {
         double baselineCost = 0, routedCost = 0;
         int baselinePass = 0, routedPass = 0, errors = 0;
         int n = tasks.size();
@@ -122,13 +143,7 @@ public class EvalRunner implements ApplicationRunner {
                 """.formatted(n, baselinePass, n, routedPass, n, errors, rows,
                               fmt(baselineCost), fmt(routedCost), saved);
 
-        Files.writeString(RESULTS_PATH, out);
-        System.out.println(out);
-        if (errors > 0) {
-            System.err.println("[eval] completed with " + errors + "/" + n
-                    + " task(s) errored — partial results written to " + RESULTS_PATH + ".");
-        }
-        System.exit(errors == 0 ? 0 : 1); // one-shot benchmark: terminate instead of leaving the web server up
+        return new EvalReport(out, n, errors);
     }
 
     /**

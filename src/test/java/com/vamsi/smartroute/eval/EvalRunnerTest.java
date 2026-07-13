@@ -1,15 +1,22 @@
 package com.vamsi.smartroute.eval;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vamsi.smartroute.routing.SmartRouteService;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiChatModel;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 /**
- * Covers the resilient task-parsing that keeps a benchmark run alive: blank lines are ignored
- * and a single malformed line is skipped rather than aborting the whole (paid) run.
+ * Covers the two pieces of EvalRunner resilience that keep a paid benchmark run alive:
+ * (1) parseTasks tolerates blank/malformed lines instead of aborting the parse, and
+ * (2) runBenchmark records a failing task as an error row and keeps going instead of letting
+ * one exception kill the whole run and lose all partial results.
  */
 class EvalRunnerTest {
 
@@ -49,5 +56,32 @@ class EvalRunnerTest {
     void emptyInputYieldsNoTasks() {
         assertTrue(EvalRunner.parseTasks(List.of(), mapper).isEmpty());
         assertTrue(EvalRunner.parseTasks(List.of("", "  "), mapper).isEmpty());
+    }
+
+    @Test
+    void aFailingTaskIsRecordedAndTheRunContinues() {
+        OpenAiChatModel chatModel = mock(OpenAiChatModel.class);
+        SmartRouteService router = mock(SmartRouteService.class);
+        // Simulate an API outage on every baseline call.
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("simulated API outage"));
+
+        EvalRunner runner = new EvalRunner(router, chatModel);
+        List<EvalRunner.Task> tasks = List.of(
+                new EvalRunner.Task("t1", "p1", "a"),
+                new EvalRunner.Task("t2", "p2", "b"));
+
+        EvalRunner.EvalReport report = assertDoesNotThrow(() -> runner.runBenchmark(tasks),
+                "one task throwing must not propagate out of the run");
+
+        assertEquals(2, report.tasks());
+        assertEquals(2, report.errored(), "both tasks failed, so both must count as errored");
+        assertTrue(report.markdown().contains("Errored: 2"));
+        assertTrue(report.markdown().contains("t1") && report.markdown().contains("t2"),
+                "both tasks must appear in the report despite the first one failing");
+        assertTrue(report.markdown().contains("⚠️ error"), "failed tasks render as error rows");
+        // The baseline call was attempted for BOTH tasks — the loop did not abort on the first failure.
+        verify(chatModel, times(2)).call(any(Prompt.class));
+        // A baseline failure short-circuits before routing, so the router is never reached.
+        verify(router, never()).route(any(), any());
     }
 }
