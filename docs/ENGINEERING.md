@@ -78,7 +78,7 @@ Each has a write-up in its module's `*-NOTES.md`.
 
 The bar throughout: *run it and observe the behavior*, don't assert it.
 
-- **88 tests, green on every push.** Unit tests, `@WebMvcTest` per-controller web slices, and
+- **90 tests, green on every push.** Unit tests, `@WebMvcTest` per-controller web slices, and
   end-to-end flows (allow / blocked / downgrade) through the real embedded server. CI runs
   `mvn package`, so the Spring Boot executable-jar repackage is exercised on every push, not just
   compilation.

@@ -30,12 +30,20 @@ public class ComplexityClassifier {
             //     substring hits like "improve"/"approve" containing "prov", and the stems
             //     (deriv/refactor/architect/recursi/complexit/algorithm) are specific enough that
             //     \w* admits only genuine inflections, never an unrelated word.
-            "\\b(prov(e|es|ed|ing|en)|proof|deriv(e|es|ed|ing|ation)|optimi[sz](e|es|ed|ing|ation)|"
-          + "refactor\\w*|concurren\\w*|race condition|algorithm\\w*|complexit\\w*|regex|"
+            //   * The suffix-list stems carry an optional trailing "s?" so PLURAL noun forms fire
+            //     too -- "proofs"/"optimizations"/"derivations"/"regexes". Without it the single
+            //     trailing \b needs a boundary right after the suffix, so the plural silently missed
+            //     while the sibling "trade-offs" (which had s?) worked (independent-review finding).
+            "\\b(prov(e|es|ed|ing|en)|proofs?|deriv(e|es|ed|ing|ations?)|optimi[sz](e|es|ed|ing|ations?)|"
+          + "refactor\\w*|concurren\\w*|race condition|algorithm\\w*|complexit\\w*|regex(es)?|"
           + "recursi\\w*|multi-step|step by step|architect\\w*|design a|trade-?offs?)\\b",
             Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern CODE_FENCE = Pattern.compile("```|\\bclass \\w+|\\bpublic static\\b");
+    // "class [A-Z]\\w+" (not "class \\w+"): a Java class name is PascalCase, so requiring an
+    // uppercase initial matches real declarations ("class Foo") while dropping everyday prose like
+    // "yoga class starts" / "class action lawsuit", which otherwise scored a spurious code point
+    // (independent-review finding). No CASE_INSENSITIVE flag here, so [A-Z] is genuinely uppercase.
+    private static final Pattern CODE_FENCE = Pattern.compile("```|\\bclass [A-Z]\\w+|\\bpublic static\\b");
 
     public Classification classify(String prompt) {
         int score = 0;

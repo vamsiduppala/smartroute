@@ -66,6 +66,33 @@ class ComplexityClassifierTest {
     }
 
     @Test
+    void pluralNounFormsOfHardSignalsRegister() {
+        // Independent-review finding: the suffix-list stems missed plurals because the single
+        // trailing \b needs a boundary right after the suffix. "trade-offs" worked (it had s?),
+        // but "proofs"/"optimizations"/"derivations"/"regexes" silently scored 0.
+        for (String prompt : new String[]{
+                "Write the proofs for these three theorems.",
+                "Review these optimizations for the hot loop.",
+                "Compare the two derivations.",
+                "Debug these regexes."
+        }) {
+            assertTrue(classifier.classify(prompt).score() >= 1,
+                    "expected a plural hard signal to fire on: " + prompt);
+        }
+    }
+
+    @Test
+    void codeFenceDetectsRealClassDeclarationsNotEverydayProse() {
+        // "class [A-Z]\\w+" matches a PascalCase Java class name but not lowercase prose. Guards
+        // against "yoga class starts" / "class action" scoring a spurious code point (review finding).
+        assertTrue(classifier.classify("Refactor: class Foo extends Bar { }").score() >= 1,
+                "a real class declaration should still register");
+        // These have no hard signals and must NOT gain a code point from the word 'class'.
+        assertEquals(0, classifier.classify("What time does the yoga class start?").score());
+        assertEquals(0, classifier.classify("Is this a class action lawsuit?").score());
+    }
+
+    @Test
     void inflectionToleranceDoesNotFalsePositiveOnUnrelatedWords() {
         // The widened stems must not swallow common words that merely CONTAIN a stem: "improve",
         // "approve", "provide" all contain "prov" but are not proofs; the leading \b blocks them.
