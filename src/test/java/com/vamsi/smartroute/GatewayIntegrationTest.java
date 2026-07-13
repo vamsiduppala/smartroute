@@ -78,4 +78,35 @@ class GatewayIntegrationTest {
         assertEquals(false, response.getBody().get("allowed"));
         assertEquals("prompt-injection", response.getBody().get("status"));
     }
+
+    @Test
+    void downgradeForcesLunaThroughTheRealServerEvenForAComplexSoundingPrompt() {
+        // The one gateway decision (ALLOW / blocked / DOWNGRADE) not yet covered end-to-end.
+        when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("42", 10, 5));
+        String tenant = "acme-downgrade-e2e";
+
+        // First call: cheap, plain prompt -> classifies to Luna, real cost ~$0.00004 booked.
+        var first = new GatewayController.GatewayRequest(tenant, "What is the capital of France?");
+        rest.postForEntity("/gateway/route", first, Map.class);
+        double spentAfterFirst = ((Number) rest.getForEntity("/governance/spend/" + tenant, Map.class)
+                .getBody().get("spentUsd")).doubleValue();
+        assertTrue(spentAfterFirst > 0);
+
+        // Cap it just above what's already spent -- comfortably under cap alone, but this next
+        // call's estimate will push it over -> BudgetGuard.evaluateAndReserve returns DOWNGRADE.
+        rest.put("/governance/budget/" + tenant + "?capUsd=" + (spentAfterFirst + 0.00005), null);
+
+        // Complex-sounding prompt: left to the classifier alone this would start at Terra/Sol,
+        // not Luna -- proving DOWNGRADE actually forced the cheap tier, not just labeled it.
+        var second = new GatewayController.GatewayRequest(tenant,
+                "Architect and derive a proof for an optimized recursive algorithm, step by step.");
+        var response = rest.postForEntity("/gateway/route", second, Map.class);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(true, response.getBody().get("allowed"));
+        assertEquals("DOWNGRADE", response.getBody().get("budgetDecision"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> route = (Map<String, Object>) response.getBody().get("route");
+        assertEquals("LUNA", route.get("tierUsed"));
+    }
 }
