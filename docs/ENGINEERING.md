@@ -92,6 +92,11 @@ The bar throughout: *run it and observe the behavior*, don't assert it.
   `RoutingSimulationTest` exercises the full routing + escalation path against a deterministic stub
   on real published pricing and writes [`simulation-results.md`](simulation-results.md) — a clearly
   labeled projection, never presented as a live number.
+- **Keyless end-to-end runs.** A `demo` Spring profile injects a stubbed `ChatModel` (this is why
+  the app depends on the `ChatModel` interface, not the concrete OpenAI client), so the whole
+  routing + gateway pipeline — guardrails, budgets, telemetry — runs and can be exercised with no
+  API key. It makes the project trivial to evaluate: clone, `./mvnw spring-boot:run
+  -Dspring-boot.run.profiles=demo`, and curl the endpoints.
 - **Kubernetes manifests are schema-validated** against the Kubernetes 1.31 OpenAPI schemas.
 
 ## Dependency hygiene
