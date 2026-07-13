@@ -39,6 +39,12 @@ public class GuardrailsController {
         return new DriftCheckResponse(name, drifted);
     }
 
+    @Operation(summary = "Check whether a tool name has a trusted baseline yet", description = "Distinct from drift: this just answers whether trust() was ever called for this name.")
+    @GetMapping("/tools/{name}/trusted")
+    public TrustedStatusResponse isTrusted(@PathVariable String name) {
+        return new TrustedStatusResponse(name, drift.isTrusted(name));
+    }
+
     private static String requireName(ToolRequest request) {
         String name = request == null ? null : request.name();
         if (name == null || name.isBlank()) {
@@ -58,4 +64,6 @@ public class GuardrailsController {
     public record TrustResponse(String name, String fingerprint) {}
 
     public record DriftCheckResponse(String name, boolean drifted) {}
+
+    public record TrustedStatusResponse(String name, boolean trusted) {}
 }

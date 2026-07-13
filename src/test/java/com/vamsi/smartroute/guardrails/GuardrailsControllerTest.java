@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -90,5 +91,25 @@ class GuardrailsControllerTest {
                         .content("{\"name\":\"search-drifting\",\"schema\":\"{\\\"type\\\":\\\"string\\\"}\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.drifted").value(true));
+    }
+
+    @Test
+    void untrustedToolNameIsNotTrusted() throws Exception {
+        mvc.perform(get("/guardrails/tools/never-seen/trusted"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("never-seen"))
+                .andExpect(jsonPath("$.trusted").value(false));
+    }
+
+    @Test
+    void trustedToolNameIsTrustedAfterTrust() throws Exception {
+        mvc.perform(post("/guardrails/tools/trust")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"search-tracked\",\"schema\":\"{}\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/guardrails/tools/search-tracked/trusted"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.trusted").value(true));
     }
 }
