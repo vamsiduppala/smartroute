@@ -29,7 +29,8 @@
 
 ## Deferred (2026-07-12)
 - **rag / memory / longcontext modules** — permanently on hold: owner's Anthropic account has no API credits, and unlike the GPT-5.6 routing simulation, RAG and long-context genuinely require a live model call to be real (retrieval quality, actual 1M-context behavior) — a stub client would just be hollow scaffolding. Not worth building until credits exist. Everything else on this project stays API-free and keeps moving.
-- **Docker image build verification** — Docker CLI is installed but the daemon isn't running (Docker Desktop isn't even started) in this environment; booting it here is slow/uncertain. `Dockerfile` has never actually been built and run, just read for correctness. Revisit when Docker Desktop is up: `docker build -t smartroute:0.1.0 .` then a smoke-test container run.
+- **Docker image build verification** — Docker CLI is installed but the daemon isn't running (Docker Desktop isn't even started) in this environment; booting it here is slow/uncertain (tried once, gave up after ~70s). `Dockerfile` has never actually been built and run, just read for correctness. Revisit when Docker Desktop is up: `docker build -t smartroute:0.1.0 .` then a smoke-test container run.
+- **k8s manifest schema/dry-run validation** — `kubectl` is installed (no cluster context configured) but the local sandbox has no reachable cluster to validate against, client or server side. What *was* verified: all 4 YAML files (`k8s/*.yaml`, `.github/workflows/ci.yml`) parse as valid YAML (via PyYAML). The Deployment/Service/Secret shapes were only checked by eye against the known Kubernetes API, not by `kubectl apply --dry-run`. Revisit with a real cluster (`kind`/`minikube`/actual context) available.
 
 ## What to measure before posting (do NOT invent these)
 - Real routed vs. Sol-only $ on the task set (run `--eval`).
