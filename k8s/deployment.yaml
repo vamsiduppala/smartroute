@@ -13,6 +13,12 @@ spec:
     metadata:
       labels:
         app: smartroute
+      # Annotations a Prometheus scrape (kubernetes_sd pod role) reads to find the
+      # per-tier telemetry exposed by the app at /actuator/prometheus.
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8080"
     spec:
       containers:
         - name: smartroute
