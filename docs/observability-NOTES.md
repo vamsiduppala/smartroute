@@ -6,6 +6,23 @@
 
 **Why an aspect:** telemetry stays cross-cutting — cost/latency are captured no matter which module (rag, memory, governance) originated the model call, without each module wiring its own metrics.
 
+**Consuming the metrics (PromQL against the scraped series):**
+```promql
+# Spend split by tier
+sum by (tier) (smartroute_cost_usd_total)
+
+# Call volume by tier, per second
+sum by (tier) (rate(smartroute_calls_total[5m]))
+
+# Average latency by tier
+  sum by (tier) (rate(smartroute_latency_seconds_sum[5m]))
+/ sum by (tier) (rate(smartroute_latency_seconds_count[5m]))
+
+# The routing win, live: fraction of calls the cheapest tier (Luna) served
+  sum(smartroute_calls_total{tier="LUNA"}) / sum(smartroute_calls_total)
+```
+The last query is the whole thesis as a production signal — the higher it trends, the more traffic the cheap heuristic is handling without escalation.
+
 **Deps added:** `spring-boot-starter-actuator` (Micrometer) + `spring-boot-starter-aop` + `micrometer-registry-prometheus` (the scrape endpoint; exposed via `management.endpoints.web.exposure.include: health,info,prometheus`).
 **Tests:** aggregation of calls + cost across tiers, empty-start — using an in-memory `SimpleMeterRegistry`, no live calls. `RouterTelemetryAspectTest` separately verifies the `@Around` advice itself actually fires, via a real `AspectJProxyFactory` proxy — not just that `TelemetryService` works as a POJO.
 
