@@ -9,6 +9,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,10 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = "spring.ai.openai.api-key=test-key-integration-only")
+// Spring Boot disables metrics-export auto-config (incl. the Prometheus scrape endpoint) inside
+// @SpringBootTest by default; opt back in so the /actuator/prometheus assertion exercises the same
+// wiring that runs in production (verified 200 there).
+@AutoConfigureObservability
 class GatewayIntegrationTest {
 
     @Autowired
@@ -66,6 +71,27 @@ class GatewayIntegrationTest {
         var spendResponse = rest.getForEntity("/governance/spend/acme-e2e", Map.class);
         assertEquals(200, spendResponse.getStatusCode().value());
         assertTrue(((Number) spendResponse.getBody().get("spentUsd")).doubleValue() > 0);
+    }
+
+    @Test
+    void perTierTelemetryIsScrapeableAtThePrometheusEndpoint() {
+        when(chatModel.call(any(Prompt.class))).thenReturn(responseOf("Paris", 10, 5));
+
+        // A real routed call records per-tier telemetry through the aspect...
+        rest.postForEntity("/gateway/route",
+                new GatewayController.GatewayRequest("acme-prom", "What is the capital of France?"), Map.class);
+
+        // ...which must then be exposed in Prometheus text format for scraping.
+        var scrape = rest.getForEntity("/actuator/prometheus", String.class);
+        assertEquals(200, scrape.getStatusCode().value());
+        String body = scrape.getBody();
+        assertNotNull(body);
+        assertTrue(body.contains("smartroute_calls_total"),
+                "expected smartroute per-tier call metric in the Prometheus scrape");
+        assertTrue(body.contains("smartroute_cost_usd_total"),
+                "expected smartroute cost metric in the Prometheus scrape");
+        assertTrue(body.contains("tier=\"LUNA\""),
+                "expected the metric to be tagged by tier");
     }
 
     @Test

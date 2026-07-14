@@ -17,6 +17,12 @@ spring:
           temperature: 0.2
 
 management:
+  endpoints:
+    web:
+      exposure:
+        # Expose the Prometheus scrape endpoint alongside health so the per-tier telemetry
+        # (smartroute_calls_total, smartroute_cost_usd_total, smartroute_latency_*) is scrapeable.
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
