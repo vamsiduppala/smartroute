@@ -82,8 +82,8 @@ This is the part most "I built an LLM router" posts skip. A savings percentage m
 > always-using-Sol, you haven't saved money — you've lowered quality and relabeled it. So the benchmark
 > reports **routed-pass vs. baseline-pass side by side**, every time.
 
-On my sample task set, a credit-free simulation on real published pricing projected **~54.6% cost
-reduction at an equal 5/5 pass rate**. I'm careful to label that a *projection*, not a live measurement —
+On a mixed 14-task sample workload, a credit-free simulation on real published pricing projected **~54% cost
+reduction at an equal 14/14 pass rate**. I'm careful to label that a *projection*, not a live measurement —
 because I don't have a billed key to run the real thing yet, and pretending a simulation is a live number
 would be exactly the dishonesty the parity caveat is about.
 

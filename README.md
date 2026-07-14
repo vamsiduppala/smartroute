@@ -134,7 +134,7 @@ curl -s localhost:8080/actuator/prometheus | grep '^smartroute'
 
 > **Live numbers need an OpenAI key with billing.** For a **credit-free demonstration**, `RoutingSimulationTest` exercises the full routing + escalation path against a deterministic stub using **real published GPT-5.6 pricing** and writes [`docs/simulation-results.md`](docs/simulation-results.md).
 >
-> **Simulated projection (not a live measurement):** on the sample task set, routing cut cost **~54.6%** vs. always-Sol at **5/5 equal pass rate**. Live measurement replaces this the moment billing is available.
+> **Simulated projection (not a live measurement):** on a 14-task sample workload, routing cut cost **~54%** vs. always-Sol at **14/14 equal pass rate**. Live measurement replaces this the moment billing is available.
 
 ## Tech stack
 

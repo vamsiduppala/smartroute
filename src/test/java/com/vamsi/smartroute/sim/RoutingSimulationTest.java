@@ -36,12 +36,28 @@ class RoutingSimulationTest {
 
     private record Task(String prompt, String expect, Tier required) {}
 
+    // A representative mixed workload: mostly simple prompts (the common case), some moderate,
+    // a few genuinely hard. `required` is the minimum tier that can answer a task -- the ground
+    // truth the stub enforces. The routed cost still depends on where the REAL classifier starts
+    // and how far it escalates, so these numbers reflect the actual heuristic, not a rigged setup.
     private static final List<Task> TASKS = List.of(
+            // simple -> Luna
             new Task("What is the capital of France?", "paris", Tier.LUNA),
             new Task("Return only the value of 2+2.", "4", Tier.LUNA),
+            new Task("What does HTTP status 404 mean?", "not found", Tier.LUNA),
+            new Task("Translate 'thank you' into Spanish.", "gracias", Tier.LUNA),
+            new Task("What is the boiling point of water in Celsius?", "100", Tier.LUNA),
+            new Task("List three primary colors.", "red", Tier.LUNA),
+            new Task("What year did the Apollo 11 Moon landing happen?", "1969", Tier.LUNA),
+            new Task("In one word, what color is a clear daytime sky?", "blue", Tier.LUNA),
+            // moderate -> Terra
             new Task("Explain the trade-off and the algorithm here.", "log", Tier.TERRA),
+            new Task("Give the regex for a US ZIP+4 code.", "digit", Tier.TERRA),
+            new Task("Explain the difference between a process and a thread.", "thread", Tier.TERRA),
+            new Task("Derive the time complexity of binary search in Big-O.", "log", Tier.TERRA),
+            // hard -> Sol
             new Task("Optimize this algorithm and prove its complexity: ```code```", "atomic", Tier.SOL),
-            new Task("What does HTTP status 404 mean?", "not found", Tier.LUNA)
+            new Task("Refactor to remove the race condition and prove correctness: ```code```", "atomic", Tier.SOL)
     );
 
     private static Tier tierOf(String modelId) {

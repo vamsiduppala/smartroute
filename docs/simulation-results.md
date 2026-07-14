@@ -7,8 +7,17 @@ Live API numbers would require an OpenAI account with billing enabled.
 |---------------|-----------------|----------|-----------|----------|------|
 | LUNA | LUNA | 1 | $0.000125 | $0.000025 | PASS |
 | LUNA | LUNA | 1 | $0.000095 | $0.000019 | PASS |
-| TERRA | TERRA | 1 | $0.000115 | $0.000057 | PASS |
-| SOL | SOL | 1 | $0.000165 | $0.000165 | PASS |
 | LUNA | LUNA | 1 | $0.000155 | $0.000031 | PASS |
+| LUNA | LUNA | 1 | $0.000130 | $0.000026 | PASS |
+| LUNA | LUNA | 1 | $0.000115 | $0.000023 | PASS |
+| LUNA | LUNA | 1 | $0.000090 | $0.000018 | PASS |
+| LUNA | LUNA | 1 | $0.000150 | $0.000030 | PASS |
+| LUNA | LUNA | 1 | $0.000145 | $0.000029 | PASS |
+| TERRA | TERRA | 1 | $0.000115 | $0.000057 | PASS |
+| TERRA | TERRA | 2 | $0.000130 | $0.000091 | PASS |
+| TERRA | TERRA | 2 | $0.000155 | $0.000109 | PASS |
+| TERRA | TERRA | 1 | $0.000125 | $0.000063 | PASS |
+| SOL | SOL | 1 | $0.000165 | $0.000165 | PASS |
+| SOL | SOL | 1 | $0.000175 | $0.000175 | PASS |
 
-**Always-Sol:** $0.000655  ·  **Routed:** $0.000298  ·  **Saved: 54.6%** at equal pass rate (5/5).
+**Always-Sol:** $0.001870  ·  **Routed:** $0.000860  ·  **Saved: 54.0%** at equal pass rate (14/14).
