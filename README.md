@@ -78,11 +78,35 @@ flowchart LR
 
 Prerequisites: **Java 21**. Maven isn't required — `./mvnw` (or `mvnw.cmd` on Windows) bootstraps the pinned version.
 
+### ▶ Run it locally with the demo UI (no API key)
+
+Clone, run, open a browser — nothing to configure, no key:
+
 ```bash
-# 1. Run the full test suite (no API key needed)
+git clone https://github.com/vamsiduppala/smartroute.git
+cd smartroute
+
+# macOS / Linux
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
+# Windows (PowerShell)
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"
+```
+
+Then open **http://localhost:8080/** — a single-page console where you type a prompt and watch the
+gateway route it: tier chosen, guardrail verdict, cost, cache hits, and a live pipeline stepper,
+all running keyless. Also on the same server: `/swagger-ui.html` (API console) and
+`/actuator/prometheus` (metrics).
+
+> Port 8080 already in use? Append `"-Dspring-boot.run.arguments=--server.port=8090"` to the command
+> and open **http://localhost:8090/** instead.
+
+### More ways to run
+
+```bash
+# Run the full test suite (no API key needed)
 ./mvnw test
 
-# 2. Run it live (needs an OpenAI key with billing)
+# Run against the real GPT-5.6 API (needs an OpenAI key with billing)
 export OPENAI_API_KEY=sk-...
 ./mvnw spring-boot:run                                    # Swagger UI at /swagger-ui.html
 
@@ -97,7 +121,8 @@ curl -s localhost:8080/gateway/route -H 'content-type: application/json' \
 
 The `demo` profile swaps in a canned `ChatModel`, so the **entire routing + gateway pipeline runs
 offline** — guardrails, budget checks, tier selection, cost accounting, and telemetry all execute
-for real; only the model call is stubbed.
+for real; only the model call is stubbed. The root URL (`/`) serves a small web console for this;
+the same endpoints are also callable directly:
 
 Prefer a live URL over a local clone? Because the demo needs no secrets, you can stand up your own copy in one click — Render reads [`render.yaml`](render.yaml) and boots the keyless demo:
 
@@ -157,6 +182,7 @@ src/main/java/com/vamsi/smartroute/
 ├── model/          # Tier — model ids, per-Mtok pricing, escalate()
 ├── routing/        # ComplexityClassifier, SmartRouteService (classify → call → escalate)
 ├── gateway/        # GatewayService (rate-limit→guardrails→cache→budget→route), ResponseCache
+resources/static/   # index.html — single-page demo console served at /
 ├── governance/     # BudgetGuard, SpendLedger, RateLimiter — per-tenant caps + rate limiting
 ├── guardrails/     # prompt-injection scan + tool-drift detection
 ├── observability/  # TelemetryService, RouterTelemetryAspect — per-call Micrometer telemetry
