@@ -65,9 +65,6 @@ public class GlobalExceptionHandler {
     // An unmapped path (no controller, no static resource) throws NoResourceFoundException on
     // Spring 6.1+. Listed explicitly so the broad Exception catch-all below doesn't shadow it into
     // a misleading 500 — a plain wrong URL should be a clean 404, same rationale as the 4xx above.
-    // An unmapped path (no controller, no static resource) throws NoResourceFoundException on
-    // Spring 6.1+. Listed explicitly so the broad Exception catch-all below doesn't shadow it into
-    // a misleading 500 — a plain wrong URL should be a clean 404, same rationale as the 4xx above.
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, String>> notFound(NoResourceFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "not found"));
