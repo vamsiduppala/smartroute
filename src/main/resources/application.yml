@@ -16,6 +16,20 @@ spring:
           model: gpt-5.6-terra
           temperature: 0.2
 
+# SmartRoute's own tunables. Every value here is the built-in default (bound via @Value in the
+# respective component) -- listed explicitly so the knobs are discoverable and overridable per
+# environment, rather than hidden in the code. Override via env vars too, e.g.
+# SMARTROUTE_GOVERNANCE_RATE_CAPACITY=50.
+smartroute:
+  governance:
+    default-cap-usd: 10.0        # per-tenant spend cap (USD) before requests are downgraded/rejected
+    rate:
+      capacity: 20               # per-tenant request burst (token-bucket size)
+      refill-per-sec: 10         # steady-state requests/sec the bucket refills at
+  cache:
+    ttl-seconds: 300             # how long an exact-match response stays cacheable (0 disables caching)
+    max-entries: 10000           # response-cache size bound
+
 management:
   endpoints:
     web:
