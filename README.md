@@ -111,6 +111,9 @@ curl -s localhost:8080/gateway/route -H 'content-type: application/json' \
 
 curl -s localhost:8080/observability/metrics
 # → {"callsByTier":{"LUNA":2},"totalCostUsd":3.97e-4,"totalCalls":2}   telemetry accrues from the calls above
+
+curl -s localhost:8080/actuator/prometheus | grep '^smartroute'
+# → smartroute_calls_total{tier="LUNA"} 2.0   ·   smartroute_cost_usd_total{tier="LUNA"} 3.97e-4   (Prometheus-scrapeable)
 ```
 
 ## The cost model & benchmark
