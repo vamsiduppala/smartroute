@@ -1,6 +1,7 @@
 package com.vamsi.smartroute.gateway;
 
 import com.vamsi.smartroute.governance.BudgetGuard;
+import com.vamsi.smartroute.governance.RateLimiter;
 import com.vamsi.smartroute.governance.SpendLedger;
 import com.vamsi.smartroute.guardrails.PromptInjectionScanner;
 import com.vamsi.smartroute.model.Tier;
@@ -22,8 +23,13 @@ class GatewayServiceTest {
     private final ComplexityClassifier classifier = new ComplexityClassifier();
 
     private GatewayService gatewayWith(SpendLedger ledger, double cap) {
+        // Permissive limiter (huge burst) so rate limiting never trips in the non-rate tests.
+        return gatewayWith(ledger, cap, new RateLimiter(1_000_000, 1_000_000));
+    }
+
+    private GatewayService gatewayWith(SpendLedger ledger, double cap, RateLimiter rateLimiter) {
         BudgetGuard guard = new BudgetGuard(ledger, cap);
-        return new GatewayService(router, scanner, guard, ledger, classifier);
+        return new GatewayService(router, scanner, guard, ledger, classifier, rateLimiter);
     }
 
     private RouteResult sampleRoute(double cost) {
@@ -48,6 +54,22 @@ class GatewayServiceTest {
         assertFalse(r.allowed());
         assertEquals("budget-exceeded", r.status());
         verify(router, never()).route(any(), any());
+    }
+
+    @Test
+    void blocksWhenTenantExceedsItsRequestRate() {
+        when(router.route(any(), any())).thenReturn(sampleRoute(0.001));
+        // Burst of 1 with no refill (rate 0): first request admitted, second rate-limited — no
+        // clock needed since nothing ever refills.
+        RateLimiter limiter = new RateLimiter(1, 0);
+        GatewayService g = gatewayWith(new SpendLedger(), 10.0, limiter);
+
+        assertTrue(g.handle("acme", "What is the capital of France?").allowed());
+
+        GatewayResult second = g.handle("acme", "What is the capital of France?");
+        assertFalse(second.allowed());
+        assertEquals("rate-limited", second.status());
+        verify(router, times(1)).route(any(), any());   // the rate-limited request never reached the router
     }
 
     @Test

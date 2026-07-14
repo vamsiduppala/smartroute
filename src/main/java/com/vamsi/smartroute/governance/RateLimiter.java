@@ -1,5 +1,6 @@
 package com.vamsi.smartroute.governance;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ public class RateLimiter {
     /** Immutable bucket snapshot; a new one is returned from each atomic {@code compute}. */
     private record Bucket(double tokens, long lastRefillNanos) {}
 
+    @Autowired
     public RateLimiter(
             @Value("${smartroute.governance.rate.capacity:20}") double capacity,
             @Value("${smartroute.governance.rate.refill-per-sec:10}") double refillPerSec) {

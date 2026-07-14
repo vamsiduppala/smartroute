@@ -1,6 +1,7 @@
 package com.vamsi.smartroute.gateway;
 
 import com.vamsi.smartroute.governance.BudgetGuard;
+import com.vamsi.smartroute.governance.RateLimiter;
 import com.vamsi.smartroute.governance.SpendLedger;
 import com.vamsi.smartroute.guardrails.PromptInjectionScanner;
 import com.vamsi.smartroute.model.Tier;
@@ -31,17 +32,26 @@ public class GatewayService {
     private final BudgetGuard budgetGuard;
     private final SpendLedger ledger;
     private final ComplexityClassifier classifier;
+    private final RateLimiter rateLimiter;
 
     public GatewayService(SmartRouteService router, PromptInjectionScanner scanner,
-                          BudgetGuard budgetGuard, SpendLedger ledger, ComplexityClassifier classifier) {
+                          BudgetGuard budgetGuard, SpendLedger ledger, ComplexityClassifier classifier,
+                          RateLimiter rateLimiter) {
         this.router = router;
         this.scanner = scanner;
         this.budgetGuard = budgetGuard;
         this.ledger = ledger;
         this.classifier = classifier;
+        this.rateLimiter = rateLimiter;
     }
 
     public GatewayResult handle(String tenant, String prompt) {
+        // Outermost gate: shed excess load per tenant before doing any scanning/classification work.
+        if (!rateLimiter.tryAcquire(tenant)) {
+            return GatewayResult.blocked("rate-limited",
+                    List.of("burst=" + rateLimiter.capacity(), "refillPerSec=" + rateLimiter.refillPerSec()));
+        }
+
         var scan = scanner.scan(prompt);
         if (scan.flagged()) {
             return GatewayResult.blocked("prompt-injection", scan.matched());
