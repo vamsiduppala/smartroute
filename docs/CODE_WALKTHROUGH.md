@@ -14,12 +14,13 @@ POST /gateway/route
       ▼
 GatewayController ──► GatewayService.handle(tenant, prompt)
                           │
-      1. guardrails ──────┤  PromptInjectionScanner.scan()      reject before any model call
-      2. classify   ──────┤  ComplexityClassifier.classify()    pick a *starting* tier, no model call
-      3. governance ──────┤  BudgetGuard.evaluateAndReserve()    atomic check-and-reserve (closes a TOCTOU race)
-      4. route      ──────┤  SmartRouteService.route()           try cheap → escalate until the validator passes
+      1. rate limit ──────┤  RateLimiter.tryAcquire()            shed excess load per tenant, before any work
+      2. guardrails ──────┤  PromptInjectionScanner.scan()      reject before any model call
+      3. classify   ──────┤  ComplexityClassifier.classify()    pick a *starting* tier, no model call
+      4. governance ──────┤  BudgetGuard.evaluateAndReserve()    atomic check-and-reserve (closes a TOCTOU race)
+      5. route      ──────┤  SmartRouteService.route()           try cheap → escalate until the validator passes
                           │        └─ RouterTelemetryAspect      records cost/latency per attempt (cross-cutting)
-      5. reconcile  ──────┘  SpendLedger.add(actual − estimate)  true up the reservation to real cost
+      6. reconcile  ──────┘  SpendLedger.add(actual − estimate)  true up the reservation to real cost
                           │
                           ▼
                      GatewayResult (ok | blocked)
@@ -37,10 +38,24 @@ and a missing tenant defaults to `"default"`. All real work lives in
 [`GatewayService.handle`](../src/main/java/com/vamsi/smartroute/gateway/GatewayService.java) so
 it stays unit-testable without a servlet.
 
-## 1. Guardrails — reject before spending a cent
+## 1. Rate limit — shed excess load first
+
+[`RateLimiter.tryAcquire`](../src/main/java/com/vamsi/smartroute/governance/RateLimiter.java) is the
+outermost gate. Each tenant gets a **token bucket** — a burst `capacity` refilled at a steady
+`refillPerSec` — and one token is consumed per request; when the bucket is empty the request is
+refused with `GatewayResult.blocked("rate-limited", …)` before any scanning, classification, or
+model work happens. This is load-shedding: cost caps (step 4) bound *spend*, but a tenant can fire
+cheap calls that each pass the budget check individually yet still overwhelm capacity, so rate has
+to be bounded separately.
+
+Like the ledger, the refill-and-consume runs inside one atomic `ConcurrentHashMap.compute`, so two
+concurrent requests for the same tenant can't both drain the last token. Time is injected (a
+`LongSupplier` of nanos) so tests drive it deterministically instead of sleeping.
+
+## 2. Guardrails — reject before spending a cent
 
 [`PromptInjectionScanner.scan`](../src/main/java/com/vamsi/smartroute/guardrails/PromptInjectionScanner.java)
-runs first. It's a heuristic pattern scan for the common override/exfiltration shapes ("ignore
+runs next. It's a heuristic pattern scan for the common override/exfiltration shapes ("ignore
 previous instructions", "reveal your system prompt", "leak the api key", …). If it flags, the
 request short-circuits to `GatewayResult.blocked("prompt-injection", …)` — **no model is ever
 called**, so a hostile prompt costs nothing.
@@ -49,7 +64,7 @@ It's deliberately a heuristic, not an ML classifier: cheap, explainable, zero ad
 honest about being a first line of defense rather than a guarantee (see
 [guardrails-NOTES.md](guardrails-NOTES.md)).
 
-## 2. Classify — pick a starting tier with no model call
+## 3. Classify — pick a starting tier with no model call
 
 [`ComplexityClassifier.classify`](../src/main/java/com/vamsi/smartroute/routing/ComplexityClassifier.java)
 scores the prompt from its text alone — length, presence of code, and "hard signal" keywords
@@ -57,11 +72,11 @@ scores the prompt from its text alone — length, presence of code, and "hard si
 *starting* tier: `Luna` (cheapest) / `Terra` / `Sol`.
 
 The key design call: this only has to be **roughly right**. It errs toward the cheaper tier on
-purpose, because step 4's escalation catches any undershoot. A wrong-but-cheap guess costs one
+purpose, because step 5's escalation catches any undershoot. A wrong-but-cheap guess costs one
 extra Luna attempt; a wrong-but-expensive guess would waste Sol money on every request. That
 asymmetry is why the heuristic is tuned to under-, not over-, estimate.
 
-## 3. Governance — atomic check-and-reserve
+## 4. Governance — atomic check-and-reserve
 
 Before routing, the gateway estimates cost at the start tier (`~4 chars/token`, 256 output
 tokens) and calls
@@ -79,7 +94,7 @@ so the second request sees the first's reservation already on the books. It retu
   decision rather than just labeling the response and routing at the expensive tier anyway.
 - `REJECT` — even `Luna` won't fit. Short-circuit to `blocked("budget-exceeded", …)`.
 
-## 4. Route — try cheap, escalate on failure
+## 5. Route — try cheap, escalate on failure
 
 [`SmartRouteService.routeFrom`](../src/main/java/com/vamsi/smartroute/routing/SmartRouteService.java)
 is the engine. Starting at the chosen tier, it loops:
@@ -102,7 +117,7 @@ after independent review passes found the gap:
 - **Pricing lives in the [`Tier`](../src/main/java/com/vamsi/smartroute/model/Tier.java) enum**,
   the single source of truth for the real published GPT-5.6 per-million-token rates.
 
-### 4a. Telemetry — cross-cutting, per attempt
+### 5a. Telemetry — cross-cutting, per attempt
 
 [`RouterTelemetryAspect`](../src/main/java/com/vamsi/smartroute/observability/RouterTelemetryAspect.java)
 wraps `route*(..)` with an AOP `@Around` advice and records **one telemetry entry per attempt**,
@@ -112,10 +127,10 @@ Because the pointcut is `route*` (not `route`), it also covers the forced-tier `
 `DOWNGRADE` takes, and on a `PartialRouteException` it still records the attempts that succeeded
 before the failure.
 
-## 5. Reconcile — true up the ledger
+## 6. Reconcile — true up the ledger
 
 Back in `GatewayService`, once the actual cost is known, the gateway books the difference:
-`ledger.add(tenant, result.costUsd() − estimate)`. The reservation from step 3 was an estimate;
+`ledger.add(tenant, result.costUsd() − estimate)`. The reservation from step 4 was an estimate;
 this line trues it up to reality. On a `PartialRouteException` the same reconciliation runs
 against the partial actual cost *before* the exception propagates — so a mid-route failure never
 leaves the reservation permanently over- or under-stating the tenant's spend.
