@@ -33,7 +33,14 @@ import static org.mockito.Mockito.when;
  * actually travels all the way through the full gateway pipeline and gets a correct answer.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = "spring.ai.openai.api-key=test-key-integration-only")
+// ttl-seconds=0 disables the response cache for these tests: they assert routing/budget/spend
+// behavior, and the cache is cross-tenant (keyed on prompt), so a cached answer from one test
+// method would otherwise leak into another and skip the routing under test. Cache behavior itself
+// is covered by GatewayServiceTest + ResponseCacheTest.
+@TestPropertySource(properties = {
+        "spring.ai.openai.api-key=test-key-integration-only",
+        "smartroute.cache.ttl-seconds=0"
+})
 // Spring Boot disables metrics-export auto-config (incl. the Prometheus scrape endpoint) inside
 // @SpringBootTest by default; opt back in so the /actuator/prometheus assertion exercises the same
 // wiring that runs in production (verified 200 there).

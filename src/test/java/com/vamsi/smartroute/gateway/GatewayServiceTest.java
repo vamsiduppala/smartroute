@@ -28,8 +28,12 @@ class GatewayServiceTest {
     }
 
     private GatewayService gatewayWith(SpendLedger ledger, double cap, RateLimiter rateLimiter) {
+        return gatewayWith(ledger, cap, rateLimiter, new ResponseCache(300, 1000));
+    }
+
+    private GatewayService gatewayWith(SpendLedger ledger, double cap, RateLimiter rateLimiter, ResponseCache cache) {
         BudgetGuard guard = new BudgetGuard(ledger, cap);
-        return new GatewayService(router, scanner, guard, ledger, classifier, rateLimiter);
+        return new GatewayService(router, scanner, guard, ledger, classifier, rateLimiter, cache);
     }
 
     private RouteResult sampleRoute(double cost) {
@@ -70,6 +74,28 @@ class GatewayServiceTest {
         assertFalse(second.allowed());
         assertEquals("rate-limited", second.status());
         verify(router, times(1)).route(any(), any());   // the rate-limited request never reached the router
+    }
+
+    @Test
+    void identicalPromptIsServedFromCacheWithoutReRoutingOrDoubleBilling() {
+        when(router.route(any(), any())).thenReturn(sampleRoute(0.0025));
+        SpendLedger ledger = new SpendLedger();
+        GatewayService g = gatewayWith(ledger, 10.0);
+
+        // First call routes for real and books spend.
+        GatewayResult first = g.handle("acme", "What is the capital of France?");
+        assertTrue(first.allowed());
+        assertEquals("Paris", first.route().answer());
+        double spentAfterFirst = ledger.spent("acme");
+        assertEquals(0.0025, spentAfterFirst, 1e-9);
+
+        // Identical prompt: served from cache -> router not called again, no extra spend booked.
+        GatewayResult second = g.handle("acme", "What is the capital of France?");
+        assertTrue(second.allowed());
+        assertEquals("CACHED", second.budgetDecision());
+        assertEquals("Paris", second.route().answer());
+        assertEquals(spentAfterFirst, ledger.spent("acme"), 1e-9, "a cache hit must not book spend again");
+        verify(router, times(1)).route(any(), any());   // routed exactly once across both calls
     }
 
     @Test

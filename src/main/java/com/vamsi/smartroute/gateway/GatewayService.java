@@ -33,16 +33,18 @@ public class GatewayService {
     private final SpendLedger ledger;
     private final ComplexityClassifier classifier;
     private final RateLimiter rateLimiter;
+    private final ResponseCache cache;
 
     public GatewayService(SmartRouteService router, PromptInjectionScanner scanner,
                           BudgetGuard budgetGuard, SpendLedger ledger, ComplexityClassifier classifier,
-                          RateLimiter rateLimiter) {
+                          RateLimiter rateLimiter, ResponseCache cache) {
         this.router = router;
         this.scanner = scanner;
         this.budgetGuard = budgetGuard;
         this.ledger = ledger;
         this.classifier = classifier;
         this.rateLimiter = rateLimiter;
+        this.cache = cache;
     }
 
     public GatewayResult handle(String tenant, String prompt) {
@@ -55,6 +57,14 @@ public class GatewayService {
         var scan = scanner.scan(prompt);
         if (scan.flagged()) {
             return GatewayResult.blocked("prompt-injection", scan.matched());
+        }
+
+        // Cheapest call is the one never made: an exact-match cache hit skips classification,
+        // budget reservation, and the model call entirely -- served for $0. Rate-limit and
+        // guardrails above still applied (a cache hit is still a request that could be hostile).
+        RouteResult cached = cache.get(prompt);
+        if (cached != null) {
+            return GatewayResult.cached(cached);
         }
 
         // Estimate cost at the classifier's start tier for a pre-spend budget check.
@@ -97,6 +107,9 @@ public class GatewayService {
             throw unexpected;
         }
         ledger.add(tenant, result.costUsd() - estimate);   // true up: reservation -> actual cost
+        if (result.passed()) {
+            cache.put(prompt, result);   // only cache a validated answer -- never serve a known-bad one again
+        }
         return GatewayResult.ok(result, decision);
     }
 }
