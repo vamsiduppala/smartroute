@@ -1,0 +1,20 @@
+# Minimal Prometheus scrape config for SmartRoute.
+#
+# The app exposes its per-tier telemetry (smartroute_calls_total, smartroute_cost_usd_total,
+# smartroute_latency_seconds{,_max}, each tagged by tier) in Prometheus text format at
+# /actuator/prometheus. Point a Prometheus server at this file to collect it:
+#
+#   prometheus --config.file=monitoring/prometheus.yml
+#
+# Then query e.g. `sum by (tier) (smartroute_cost_usd_total)` — see docs/observability-NOTES.md
+# for the useful queries, including the "fraction of calls served by the cheapest tier" routing-win
+# signal. In Kubernetes the same scrape is driven by the prometheus.io/* pod annotations in
+# k8s/deployment.yaml instead of a static target.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: smartroute
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['localhost:8080']   # change to your host:port (or the mapped container port)
