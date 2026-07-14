@@ -27,8 +27,12 @@ import java.util.function.LongSupplier;
 @Component
 public class RateLimiter {
 
+    /** Idle-tenant sweep cap: buckets are reclaimed once the map grows past this many tenants. */
+    private static final int DEFAULT_MAX_TENANTS = 100_000;
+
     private final double capacity;
     private final double refillPerSec;
+    private final int maxTenants;
     private final LongSupplier nanoClock;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
@@ -39,13 +43,19 @@ public class RateLimiter {
     public RateLimiter(
             @Value("${smartroute.governance.rate.capacity:20}") double capacity,
             @Value("${smartroute.governance.rate.refill-per-sec:10}") double refillPerSec) {
-        this(capacity, refillPerSec, System::nanoTime);
+        this(capacity, refillPerSec, DEFAULT_MAX_TENANTS, System::nanoTime);
     }
 
-    /** Test seam: inject a controllable nanosecond clock. */
+    /** Test seam: inject a controllable nanosecond clock (default tenant cap). */
     RateLimiter(double capacity, double refillPerSec, LongSupplier nanoClock) {
+        this(capacity, refillPerSec, DEFAULT_MAX_TENANTS, nanoClock);
+    }
+
+    /** Test seam: also control the tenant cap so idle-bucket eviction can be exercised. */
+    RateLimiter(double capacity, double refillPerSec, int maxTenants, LongSupplier nanoClock) {
         this.capacity = capacity;
         this.refillPerSec = refillPerSec;
+        this.maxTenants = maxTenants;
         this.nanoClock = nanoClock;
     }
 
@@ -70,10 +80,33 @@ public class RateLimiter {
             }
             return new Bucket(tokens, now);        // empty: refuse, but keep the refreshed timestamp
         });
+        // Bound memory: without this the map keeps a permanent entry per distinct tenant string
+        // (tenant ids come from the request, so a high-cardinality/spoofed value could grow it
+        // without limit -- ironic for a load-shedding component). Only sweep when over the cap.
+        if (buckets.size() > maxTenants) {
+            evictIdleBuckets(now);
+        }
         return granted[0];
+    }
+
+    /**
+     * Drop buckets that have fully refilled back to {@code capacity}: such a bucket is
+     * indistinguishable from having no entry at all (the tenant's next request would recreate it at
+     * full capacity), so removing it is safe and never weakens the limit. Active (partially-drained)
+     * tenants are kept. O(n) but only runs while the map is over its cap.
+     */
+    private void evictIdleBuckets(long now) {
+        buckets.entrySet().removeIf(e -> {
+            Bucket b = e.getValue();
+            double refilled = b.tokens() + (now - b.lastRefillNanos()) / 1_000_000_000.0 * refillPerSec;
+            return refilled >= capacity;
+        });
     }
 
     public double capacity() { return capacity; }
 
     public double refillPerSec() { return refillPerSec; }
+
+    /** Number of tenants currently tracked — for tests/introspection of the memory bound. */
+    int trackedTenants() { return buckets.size(); }
 }

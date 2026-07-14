@@ -68,6 +68,25 @@ class RateLimiterTest {
     }
 
     @Test
+    void idleTenantBucketsAreReclaimedWhenOverTheCapSoTheMapStaysBounded() {
+        // maxTenants=2: once a 3rd distinct tenant appears, fully-refilled (idle) buckets are swept.
+        // A fully-refilled bucket == no bucket (next request recreates it at capacity), so dropping
+        // it is safe. Without this the map would keep a permanent entry per distinct tenant forever.
+        RateLimiter limiter = new RateLimiter(5, 5, 2, nanos::get);
+        limiter.tryAcquire("a");                 // bucket a: 4 tokens
+        limiter.tryAcquire("b");                 // bucket b: 4 tokens
+        assertEquals(2, limiter.trackedTenants());
+
+        advanceSeconds(2);                       // a and b refill to full (idle now)
+        limiter.tryAcquire("c");                 // 3rd tenant -> over cap -> sweep idle a, b
+
+        assertEquals(1, limiter.trackedTenants(), "idle tenants a and b were reclaimed; only active c remains");
+        // Eviction never weakens the limit: a recreated bucket starts at full capacity, exactly as
+        // an idle one would have refilled to.
+        assertTrue(limiter.tryAcquire("a"), "a gets a fresh full bucket, no different from before");
+    }
+
+    @Test
     void neverAdmitsMoreThanCapacityUnderConcurrentLoad() throws InterruptedException {
         // Same rigor as SpendLedger's TOCTOU test: with the clock frozen (no refill), N concurrent
         // callers must together be admitted at most `capacity` times -- never more, even racing.
